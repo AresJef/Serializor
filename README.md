@@ -407,6 +407,7 @@ d = sr.loads(s)
 
 ### Acknowledgements
 serializor is based on several open-source repositories.
+- [cytimes](https://github.com/AresJef/cyTimes)
 - [numpy](https://github.com/numpy/numpy)
 - [orjson](https://github.com/pandas-dev/pandas)
 - [pandas](https://github.com/pandas-dev/pandas)
