@@ -7,16 +7,18 @@
 import cython
 from cython.cimports import numpy as np  # type: ignore
 from cython.cimports.numpy import PyArray_ToList as np_tolist  # type: ignore
+from cython.cimports.numpy import PyArray_FROM_O as np_from_list  # type: ignore
 from cython.cimports.cpython import datetime  # type: ignore
 from cython.cimports.cpython.list import PyList_Check as is_list  # type: ignore
 from cython.cimports.cpython.list import PyList_New as new_list  # type: ignore
 from cython.cimports.cpython.list import PyList_Size as len_list  # type: ignore
 from cython.cimports.cpython.dict import PyDict_New as new_dict  # type: ignore
 from cython.cimports.cpython.dict import PyDict_Check as is_dict  # type: ignore
+from cython.cimports.cpython.int import PyInt_Check as is_int  # type: ignore
+from cython.cimports.cpython.string import PyString_Check as is_str  # type: ignore
 from cython.cimports.cytimes import cydatetime as cydt  # type: ignore
 
 np.import_array()
-np.import_umath()
 datetime.import_datetime()
 
 # Python imports
@@ -31,24 +33,24 @@ __all__ = ["dumps", "loads", "SerializorError"]
 
 # Constants --------------------------------------------------------------------------------------------------------------
 # Unique key
-UNIQUE_KEY = "$RECD$"
+UNIQUE_KEY = "$@SL#%"
 
 # Special keys
-DECIMAL_KEY: str = "$DECI$"  # Decimal
-BYTES_KEY: str = "$BYTE$"  # bytes
-DATE_KEY: str = "$DATE$"  # datetime.date
-DATETIME_NAIVE_KEY: str = "$DTNA$"  # datetime.datetime (naive)
-DATETIME_AWARE_KEY: str = "$DTAW$"  # datetime.datetime (aware)
-TIME_NAIVE_KEY: str = "$TMNA$"  # datetime.time (naive)
-TIME_AWARE_KEY: str = "$TMAW$"  # datetime.time (aware)
-TIMEDELTA_KEY: str = "$TMDL$"  # datetime.timedelta
-NDARRAY_KEY: str = "$NDAR$"  # numpy.ndarray
-PDSERIES_JSON_KEY: str = "$SRJS$"  # pandas.Series (Json type)
-PDSERIES_OBJT_KEY: str = "$SROB$"  # pandas.Series (Object type)
-PDSERIES_TSNA_KEY: str = "$SRTN$"  # pandas.Series (Timestamp naive)
-PDSERIES_TSAW_KEY: str = "$SRTZ$"  # pandas.Series (Timestamp aware)
-PDSERIES_TMDL_KEY: str = "$SRTD$"  # pandas.Series (Timedelta)
-PDDATAFRAME_KEY: str = "$PDDF$"  # pandas.DataFrame
+DECIMAL_KEY: str = "$@DE#%"  # Decimal
+BYTES_KEY: str = "$@BY#%"  # bytes
+DATE_KEY: str = "$@DT#%"  # datetime.date
+DATETIME_NAIVE_KEY: str = "$@DN#%"  # datetime.datetime (naive)
+DATETIME_AWARE_KEY: str = "$@DA#%"  # datetime.datetime (aware)
+TIME_NAIVE_KEY: str = "$@TN#%"  # datetime.time (naive)
+TIME_AWARE_KEY: str = "$@TA#%"  # datetime.time (aware)
+TIMEDELTA_KEY: str = "$@DL#%"  # datetime.timedelta
+NDARRAY_KEY: str = "$@ND#%"  # numpy.ndarray
+PDSERIES_JSON_KEY: str = "$@SJ#%"  # pandas.Series (Json type)
+PDSERIES_OBJT_KEY: str = "$@SO#%"  # pandas.Series (Object type)
+PDSERIES_TSNA_KEY: str = "$@SN#%"  # pandas.Series (Timestamp naive)
+PDSERIES_TSAW_KEY: str = "$@ST#%"  # pandas.Series (Timestamp aware)
+PDSERIES_TMDL_KEY: str = "$@SD#%"  # pandas.Series (Timedelta)
+PDDATAFRAME_KEY: str = "$@DF#%"  # pandas.DataFrame
 
 
 # Encode ---------------------------------------------------------------------------------------------------------------
@@ -336,16 +338,19 @@ def _decode_handler(obj: object) -> object:
 @cython.cfunc
 @cython.inline(True)
 def _decode_list(obj: list) -> object:
+    # Get list length
+    _len_: cython.int = len_list(obj)
     # Special Key
-    if len_list(obj) > 2 and obj[0] == UNIQUE_KEY:
+    if 3 <= _len_ <= 6 and obj[0] == UNIQUE_KEY:
         try:
-            # Try access key
+            # Try access key & value
             key: str = obj[1]
+            val: object = obj[2]
             # . pandas.DataFrame
-            if key == PDDATAFRAME_KEY:
+            if key == PDDATAFRAME_KEY and _len_ == 3 and is_list(val):
                 dic: dict = new_dict()
                 col: list
-                for col in obj[2]:
+                for col in val:
                     skey: str = col[0]
                     vals: list = col[1]
                     name: str = col[2]
@@ -364,50 +369,50 @@ def _decode_list(obj: list) -> object:
                         raise TypeError
                 return pd.DataFrame(dic)
             # . pandas.Series (Json)
-            if key == PDSERIES_JSON_KEY:
-                return pd.Series(obj[2], name=obj[3])
+            if key == PDSERIES_JSON_KEY and _len_ == 4 and is_list(val):
+                return pd.Series(val, name=obj[3])
             # . pandas.Series (Object)
-            if key == PDSERIES_OBJT_KEY:
-                return pd.Series([_decode_handler(i) for i in obj[2]], name=obj[3])
+            if key == PDSERIES_OBJT_KEY and _len_ == 4 and is_list(val):
+                return pd.Series([_decode_handler(i) for i in val], name=obj[3])
             # . pandas.Series (Timestamp naive)
-            if key == PDSERIES_TSNA_KEY:
-                return pd.Series(pd.DatetimeIndex(obj[2]), name=obj[3])
+            if key == PDSERIES_TSNA_KEY and _len_ == 4 and is_list(val):
+                return pd.Series(pd.DatetimeIndex(val), name=obj[3])
             # . pandas.Series (Timestamp aware)
-            if key == PDSERIES_TSAW_KEY:
+            if key == PDSERIES_TSAW_KEY and _len_ == 6 and is_list(val):
                 tzinfo: object = cydt.gen_timezone(obj[4], obj[5])
-                return pd.Series(pd.DatetimeIndex(obj[2], tz=tzinfo), name=obj[3])
+                return pd.Series(pd.DatetimeIndex(val, tz=tzinfo), name=obj[3])
             # . pandas.Series (Timedelta)
-            if key == PDSERIES_TMDL_KEY:
-                return pd.Series(pd.TimedeltaIndex(obj[2]), name=obj[3])
+            if key == PDSERIES_TMDL_KEY and _len_ == 4 and is_list(val):
+                return pd.Series(pd.TimedeltaIndex(val), name=obj[3])
             # . datetime-niave
-            if key == DATETIME_NAIVE_KEY:
-                return cydt.dt_fr_microseconds(obj[2])
+            if key == DATETIME_NAIVE_KEY and _len_ == 3 and is_int(val):
+                return cydt.dt_fr_microseconds(val)
             # . datetime-aware
-            if key == DATETIME_AWARE_KEY:
+            if key == DATETIME_AWARE_KEY and _len_ == 5 and is_int(val):
                 tzinfo: object = cydt.gen_timezone(obj[3], obj[4])
-                return cydt.dt_fr_microseconds(obj[2], tzinfo)
+                return cydt.dt_fr_microseconds(val, tzinfo)
             # . date
-            if key == DATE_KEY:
-                return cydt.date_fr_ordinal(obj[2])
+            if key == DATE_KEY and _len_ == 3 and is_int(val):
+                return cydt.date_fr_ordinal(val)
             # . time-naive
-            if key == TIME_NAIVE_KEY:
-                return cydt.time_fr_microseconds(obj[2])
+            if key == TIME_NAIVE_KEY and _len_ == 3 and is_int(val):
+                return cydt.time_fr_microseconds(val)
             # . time-aware
-            if key == TIME_AWARE_KEY:
+            if key == TIME_AWARE_KEY and _len_ == 5 and is_int(val):
                 tzinfo: object = cydt.gen_timezone(obj[3], obj[4])
-                return cydt.time_fr_microseconds(obj[2], tzinfo)
+                return cydt.time_fr_microseconds(val, tzinfo)
             # . timedelta
-            if key == TIMEDELTA_KEY:
-                return cydt.delta_fr_microseconds(obj[2])
+            if key == TIMEDELTA_KEY and _len_ == 3 and is_int(val):
+                return cydt.delta_fr_microseconds(val)
             # . decimal
-            if key == DECIMAL_KEY:
-                return Decimal(obj[2])
+            if key == DECIMAL_KEY and _len_ == 3 and is_str(val):
+                return Decimal(val)
             # . bytes
-            if key == BYTES_KEY:
-                return obj[2].encode("utf-8")
+            if key == BYTES_KEY and _len_ == 3 and is_str(val):
+                return val.encode("utf-8")
             # . ndarray
-            if key == NDARRAY_KEY:
-                return np.PyArray_FROM_O([_decode_handler(i) for i in obj[2]])
+            if key == NDARRAY_KEY and _len_ == 3 and is_list(val):
+                return np_from_list([_decode_handler(i) for i in val])
 
         except Exception:
             # Fallback to normal key
