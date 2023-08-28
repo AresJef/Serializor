@@ -13,12 +13,11 @@ jobs:
     strategy:
       matrix:
         # os: [ubuntu-20.04, windows-latest, macos-latest]
-        # os: [ubuntu-20.04, macos-latest]
-        os: [macos-latest]
+        os: [ubuntu-20.04, macos-latest]
         arch: [auto]
-        # include:
-        # - os: ubuntu-20.04
-        #   arch: aarch64
+        include:
+        - os: ubuntu-20.04
+          arch: aarch64
     steps:
       - uses: actions/checkout@v3
         with:
