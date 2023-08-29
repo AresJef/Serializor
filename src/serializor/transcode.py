@@ -10,9 +10,7 @@ from cython.cimports.numpy import PyArray_ToList as np_tolist  # type: ignore
 from cython.cimports.numpy import PyArray_FROM_O as np_from_list  # type: ignore
 from cython.cimports.cpython import datetime  # type: ignore
 from cython.cimports.cpython.list import PyList_Check as is_list  # type: ignore
-from cython.cimports.cpython.list import PyList_New as new_list  # type: ignore
 from cython.cimports.cpython.list import PyList_Size as len_list  # type: ignore
-from cython.cimports.cpython.dict import PyDict_New as new_dict  # type: ignore
 from cython.cimports.cpython.dict import PyDict_Check as is_dict  # type: ignore
 from cython.cimports.cpython.int import PyInt_Check as is_int  # type: ignore
 from cython.cimports.cpython.string import PyString_Check as is_str  # type: ignore
@@ -212,7 +210,7 @@ def _encode_series(obj: pd.Series) -> list:
 @cython.exceptval(check=False)
 def _encode_dataframe(obj: pd.DataFrame) -> list:
     # Iterate over columns
-    data: list = new_list(0)
+    data: list = []
     kind: str
     for name, col in obj.items():
         kind = col.dtype.kind
@@ -348,7 +346,7 @@ def _decode_list(obj: list) -> object:
             val: object = obj[2]
             # . pandas.DataFrame
             if key == PDDATAFRAME_KEY and _len_ == 3 and is_list(val):
-                dic: dict = new_dict()
+                dic: dict = {}
                 col: list
                 for col in val:
                     skey: str = col[0]
