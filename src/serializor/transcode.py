@@ -316,6 +316,34 @@ def _encode(obj: object) -> bytes:
 
 @cython.ccall
 def dumps(obj: object) -> bytes:
+    """Serielize an object to bytes.
+
+    ### Supported data types includes:
+    - boolean: `bool` & `numpy.bool_`
+    - integer: `int` & `numpy.int` & `numpy.uint`
+    - float: `float` & `numpy.float_`
+    - decimal: `decimal.Decimal`
+    - string: `str`
+    - bytes: `bytes`
+    - date: `datetime.date`
+    - time: `datetime.time`
+    - datetime: `datetime.datetime` % `pandas.Timestamp` & `numpy.datetime64`
+    - timedelta: `datetime.timedelta` & `pandas.Timedelta` & `numpy.timedelta64`
+    - None: `None` & `numpy.nan`
+    - list: `list` of above supported data types
+    - tuple: `tuple` of above supported data types
+    - set: `set` of above supported data types
+    - frozenset: `frozenset` of above supported data types
+    - dict: `dict` of above supported data types
+    - numpy.record: `numpy.record` of above supported data types
+    - numpy.ndarray: `numpy.ndarray` of above supported data types
+    - pandas.Series: `pandas.Series` of above supported data types
+    - pandas.DataFrame: `pandas.DataFrame` of above supported data types
+
+    :param obj: The object to be serialized.
+    :raises SerializorError: If any error occurs.
+    :return: `<bytes>` The serialized data.
+    """
     return _encode(obj)
 
 
@@ -437,8 +465,11 @@ def _decode(obj: bytes) -> object:
 
 
 @cython.ccall
-def loads(obj: bytes) -> object:
-    return _decode(obj)
+def loads(val: bytes) -> object:
+    """Deserialize the value to its original (or compatible) python dtype.
+    Must be used with the `dumps` function in this module.
+    """
+    return _decode(val)
 
 
 # Exceptions -----------------------------------------------------------------------------------------------------------
