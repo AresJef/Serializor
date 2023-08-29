@@ -1,4 +1,4 @@
-Cython>=3.0.2
+Cython==3.0.2
 cytimes>=0.1.10.28
 numpy>=1.25.2
 orjson>=3.9.5
