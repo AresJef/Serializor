@@ -115,7 +115,8 @@ def _encode_datetime(obj: object) -> list:
         cydt.delta_to_microseconds(tzinfo.utcoffset(obj)) // cydt.US_SECOND
     )
     tzname: object = tzinfo.tzname(obj)
-    return [UNIQUE_KEY, DATETIME_AWARE_KEY, us, offset, tzname]
+    fold: cython.int = cydt.get_dt_fold(obj)
+    return [UNIQUE_KEY, DATETIME_AWARE_KEY, us, offset, tzname, fold]
 
 
 @cython.cfunc
@@ -131,7 +132,8 @@ def _encode_time(obj: object) -> list:
         cydt.delta_to_microseconds(tzinfo.utcoffset(None)) // cydt.US_SECOND
     )
     tzname: object = tzinfo.tzname(None)
-    return [UNIQUE_KEY, TIME_AWARE_KEY, us, offset, tzname]
+    fold: cython.int = cydt.get_time_fold(obj)
+    return [UNIQUE_KEY, TIME_AWARE_KEY, us, offset, tzname, fold]
 
 
 @cython.cfunc
@@ -414,9 +416,9 @@ def _decode_list(obj: list) -> object:
             if key == DATETIME_NAIVE_KEY and _len_ == 3 and is_int(val):
                 return cydt.dt_fr_microseconds(val)
             # . datetime-aware
-            if key == DATETIME_AWARE_KEY and _len_ == 5 and is_int(val):
+            if key == DATETIME_AWARE_KEY and _len_ == 6 and is_int(val):
                 tzinfo: object = cydt.gen_timezone(obj[3], obj[4])
-                return cydt.dt_fr_microseconds(val, tzinfo)
+                return cydt.dt_fr_microseconds(val, tzinfo, obj[5])
             # . date
             if key == DATE_KEY and _len_ == 3 and is_int(val):
                 return cydt.date_fr_ordinal(val)
@@ -424,9 +426,9 @@ def _decode_list(obj: list) -> object:
             if key == TIME_NAIVE_KEY and _len_ == 3 and is_int(val):
                 return cydt.time_fr_microseconds(val)
             # . time-aware
-            if key == TIME_AWARE_KEY and _len_ == 5 and is_int(val):
+            if key == TIME_AWARE_KEY and _len_ == 6 and is_int(val):
                 tzinfo: object = cydt.gen_timezone(obj[3], obj[4])
-                return cydt.time_fr_microseconds(val, tzinfo)
+                return cydt.time_fr_microseconds(val, tzinfo, obj[5])
             # . timedelta
             if key == TIMEDELTA_KEY and _len_ == 3 and is_int(val):
                 return cydt.delta_fr_microseconds(val)
