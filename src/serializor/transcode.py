@@ -78,7 +78,7 @@ def _encode_int(obj: cython.longlong) -> cython.longlong:
 @cython.inline(True)
 @cython.exceptval(check=False)
 def _encode_float(obj: object) -> object:
-    return float(obj)
+    return float(str(obj))
 
 
 @cython.cfunc
@@ -307,7 +307,8 @@ def _fallback_handler(obj: object) -> object:
 # Master encode
 @cython.cfunc
 @cython.inline(True)
-def _encode(obj: object) -> bytes:
+def encode(obj: object) -> bytes:
+    """cfunction for `dumps`."""
     try:
         return orjson.dumps(
             obj, default=_fallback_handler, option=orjson.OPT_PASSTHROUGH_DATETIME
@@ -321,59 +322,59 @@ def dumps(obj: object) -> bytes:
     """Serielize an object to bytes.
 
     ### Supported data types includes:
-    - boolean: `bool` & `numpy.bool_`
-    - integer: `int` & `numpy.int` & `numpy.uint`
-    - float: `float` & `numpy.float_`
-    - decimal: `decimal.Decimal`
-    - string: `str`
-    - bytes: `bytes`
-    - date: `datetime.date`
-    - time: `datetime.time`
-    - datetime: `datetime.datetime` % `pandas.Timestamp` & `numpy.datetime64`
-    - timedelta: `datetime.timedelta` & `pandas.Timedelta` & `numpy.timedelta64`
-    - None: `None` & `numpy.nan`
-    - list: `list` of above supported data types
-    - tuple: `tuple` of above supported data types
-    - set: `set` of above supported data types
-    - frozenset: `frozenset` of above supported data types
-    - dict: `dict` of above supported data types
-    - numpy.record: `numpy.record` of above supported data types
-    - numpy.ndarray: `numpy.ndarray` of above supported data types
-    - pandas.Series: `pandas.Series` of above supported data types
-    - pandas.DataFrame: `pandas.DataFrame` of above supported data types
+    - boolean: `bool` & `numpy.bool_` -> deserialized to `bool`
+    - integer: `int` & `numpy.int` & `numpy.uint` -> deserialized to `int`
+    - float: `float` & `numpy.float_` -> deserialized to `float`
+    - decimal: `decimal.Decimal` -> deserialized to `decimal.Decimal`
+    - string: `str` -> deserialized to `str`
+    - bytes: `bytes` -> deserialized to `bytes`
+    - date: `datetime.date` -> deserialized to `datetime.date`
+    - time: `datetime.time` -> deserialized to `datetime.time`
+    - datetime: `datetime.datetime` % `pandas.Timestamp` & `numpy.datetime64` -> deserialized to `datetime.datetime`
+    - timedelta: `datetime.timedelta` & `pandas.Timedelta` & `numpy.timedelta64` -> deserialized to `datetime.timedelta`
+    - None: `None` & `numpy.nan` -> deserialized to `None`
+    - list: `list` of above supported data types -> deserialized to `list`
+    - tuple: `tuple` of above supported data types -> deserialized to `list`
+    - set: `set` of above supported data types -> deserialized to `list`
+    - frozenset: `frozenset` of above supported data types -> deserialized to `list`
+    - dict: `dict` of above supported data types -> deserialized to `dict`
+    - numpy.record: `numpy.record` of above supported data types -> deserialized to `list`
+    - numpy.ndarray: `numpy.ndarray` of above supported data types -> deserialized to `np.ndarray`
+    - pandas.Series: `pandas.Series` of above supported data types -> deserialized to `pandas.Series`
+    - pandas.DataFrame: `pandas.DataFrame` of above supported data types -> deserialized to `pandas.DataFrame`
 
     :param obj: The object to be serialized.
     :raises SerializorError: If any error occurs.
     :return: `<bytes>` The serialized data.
     """
-    return _encode(obj)
+    return encode(obj)
 
 
 # Decode ---------------------------------------------------------------------------------------------------------------
 # Handle types
 @cython.cfunc
 @cython.inline(True)
-def _decode_handler(obj: object) -> object:
-    if is_list(obj):
-        return _decode_list(obj)
-    elif is_dict(obj):
-        return _decode_dict(obj)
+def _decode_handler(data: object) -> object:
+    if is_list(data):
+        return _decode_list(data)
+    elif is_dict(data):
+        return _decode_dict(data)
     else:
-        return obj
+        return data
 
 
 # Complex types
 @cython.cfunc
 @cython.inline(True)
-def _decode_list(obj: list) -> object:
+def _decode_list(data: list) -> object:
     # Get list length
-    _len_: cython.int = len_list(obj)
+    _len_: cython.int = len_list(data)
     # Special Key
-    if 3 <= _len_ <= 6 and obj[0] == UNIQUE_KEY:
+    if 3 <= _len_ <= 6 and data[0] == UNIQUE_KEY:
         try:
             # Try access key & value
-            key: str = obj[1]
-            val: object = obj[2]
+            key: str = data[1]
+            val: object = data[2]
             # . pandas.DataFrame
             if key == PDDATAFRAME_KEY and _len_ == 3 and is_list(val):
                 dic: dict = {}
@@ -398,27 +399,27 @@ def _decode_list(obj: list) -> object:
                 return pd.DataFrame(dic)
             # . pandas.Series (Json)
             if key == PDSERIES_JSON_KEY and _len_ == 4 and is_list(val):
-                return pd.Series(val, name=obj[3])
+                return pd.Series(val, name=data[3])
             # . pandas.Series (Object)
             if key == PDSERIES_OBJT_KEY and _len_ == 4 and is_list(val):
-                return pd.Series([_decode_handler(i) for i in val], name=obj[3])
+                return pd.Series([_decode_handler(i) for i in val], name=data[3])
             # . pandas.Series (Timestamp naive)
             if key == PDSERIES_TSNA_KEY and _len_ == 4 and is_list(val):
-                return pd.Series(pd.DatetimeIndex(val), name=obj[3])
+                return pd.Series(pd.DatetimeIndex(val), name=data[3])
             # . pandas.Series (Timestamp aware)
             if key == PDSERIES_TSAW_KEY and _len_ == 6 and is_list(val):
-                tzinfo: object = cydt.gen_timezone(obj[4], obj[5])
-                return pd.Series(pd.DatetimeIndex(val, tz=tzinfo), name=obj[3])
+                tzinfo: object = cydt.gen_timezone(data[4], data[5])
+                return pd.Series(pd.DatetimeIndex(val, tz=tzinfo), name=data[3])
             # . pandas.Series (Timedelta)
             if key == PDSERIES_TMDL_KEY and _len_ == 4 and is_list(val):
-                return pd.Series(pd.TimedeltaIndex(val), name=obj[3])
+                return pd.Series(pd.TimedeltaIndex(val), name=data[3])
             # . datetime-niave
             if key == DATETIME_NAIVE_KEY and _len_ == 3 and is_int(val):
                 return cydt.dt_fr_microseconds(val)
             # . datetime-aware
             if key == DATETIME_AWARE_KEY and _len_ == 6 and is_int(val):
-                tzinfo: object = cydt.gen_timezone(obj[3], obj[4])
-                return cydt.dt_fr_microseconds(val, tzinfo, obj[5])
+                tzinfo: object = cydt.gen_timezone(data[3], data[4])
+                return cydt.dt_fr_microseconds(val, tzinfo, data[5])
             # . date
             if key == DATE_KEY and _len_ == 3 and is_int(val):
                 return cydt.date_fr_ordinal(val)
@@ -427,8 +428,8 @@ def _decode_list(obj: list) -> object:
                 return cydt.time_fr_microseconds(val)
             # . time-aware
             if key == TIME_AWARE_KEY and _len_ == 6 and is_int(val):
-                tzinfo: object = cydt.gen_timezone(obj[3], obj[4])
-                return cydt.time_fr_microseconds(val, tzinfo, obj[5])
+                tzinfo: object = cydt.gen_timezone(data[3], data[4])
+                return cydt.time_fr_microseconds(val, tzinfo, data[5])
             # . timedelta
             if key == TIMEDELTA_KEY and _len_ == 3 and is_int(val):
                 return cydt.delta_fr_microseconds(val)
@@ -447,31 +448,32 @@ def _decode_list(obj: list) -> object:
             pass
 
     # Normal Key
-    return [_decode_handler(i) for i in obj]
+    return [_decode_handler(i) for i in data]
 
 
 @cython.cfunc
 @cython.inline(True)
-def _decode_dict(obj: dict) -> object:
-    return {key: _decode_handler(val) for key, val in obj.items()}
+def _decode_dict(data: dict) -> object:
+    return {key: _decode_handler(val) for key, val in data.items()}
 
 
 # Master decode
 @cython.cfunc
 @cython.inline(True)
-def _decode(obj: bytes) -> object:
+def decode(data: bytes) -> object:
+    """cfunction for `loads`."""
     try:
-        return _decode_handler(orjson.loads(obj))
+        return _decode_handler(orjson.loads(data))
     except Exception as err:
         raise SerializorError("<Serializor> %s" % err)
 
 
 @cython.ccall
-def loads(val: bytes) -> object:
+def loads(data: bytes) -> object:
     """Deserialize the value to its original (or compatible) python dtype.
     Must be used with the `dumps` function in this module.
     """
-    return _decode(val)
+    return decode(data)
 
 
 # Exceptions -----------------------------------------------------------------------------------------------------------

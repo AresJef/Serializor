@@ -9,26 +9,26 @@ deserializes them back to their original (or compatiable) python
 data type.
 
 Supported data types includes:
-- boolean: `bool` & `numpy.bool_`
-- integer: `int` & `numpy.int` & `numpy.uint`
-- float: `float` & `numpy.float_`
-- decimal: `decimal.Decimal`
-- string: `str`
-- bytes: `bytes`
-- date: `datetime.date`
-- time: `datetime.time`
-- datetime: `datetime.datetime` % `pandas.Timestamp` & `numpy.datetime64`
-- timedelta: `datetime.timedelta` & `pandas.Timedelta` & `numpy.timedelta64`
-- None: `None` & `numpy.nan`
-- list: `list` of above supported data types
-- tuple: `tuple` of above supported data types
-- set: `set` of above supported data types
-- frozenset: `frozenset` of above supported data types
-- dict: `dict` of above supported data types
-- numpy.record: `numpy.record` of above supported data types
-- numpy.ndarray: `numpy.ndarray` of above supported data types
-- pandas.Series: `pandas.Series` of above supported data types
-- pandas.DataFrame: `pandas.DataFrame` of above supported data types
+- boolean: `bool` & `numpy.bool_` -> deserialize to `bool`
+- integer: `int` & `numpy.int` & `numpy.uint` -> deserialize to `int`
+- float: `float` & `numpy.float_` -> deserialize to `float`
+- decimal: `decimal.Decimal` -> deserialize to `decimal.Decimal`
+- string: `str` -> deserialize to `str`
+- bytes: `bytes` -> deserialize to `bytes`
+- date: `datetime.date` -> deserialize to `datetime.date`
+- time: `datetime.time` -> deserialize to `datetime.time`
+- datetime: `datetime.datetime` & `pandas.Timestamp` & `numpy.datetime64` -> deserialize to `datetime.datetime`
+- timedelta: `datetime.timedelta` & `pandas.Timedelta` & `numpy.timedelta64` -> deserialize to `datetime.timedelta`
+- None: `None` & `numpy.nan` -> deserialize to `None`
+- list: `list` of above supported data types -> deserialize to `list`
+- tuple: `tuple` of above supported data types -> deserialize to `list`
+- set: `set` of above supported data types -> deserialize to `list`
+- frozenset: `frozenset` of above supported data types -> deserialize to `list`
+- dict: `dict` of above supported data types -> deserialize to `dict`
+- numpy.record: `numpy.record` of above supported data types -> deserialize to `list`
+- numpy.ndarray: `numpy.ndarray` of above supported data types -> deserialize to `np.ndarray`
+- pandas.Series: `pandas.Series` of above supported data types -> deserialize to `pandas.Series`
+- pandas.DataFrame: `pandas.DataFrame` of above supported data types -> deserialize to `pandas.DataFrame`
 
 The core serialization is based on `orjson`, which is a fast, superb JSON
 library for Python. As a result, the `dumps` result is in `bytes` format
