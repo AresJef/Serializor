@@ -3,7 +3,7 @@
 # from typing import Any
 from typing import Any
 from timeit import timeit
-import datetime
+import datetime, time
 from decimal import Decimal
 import numpy as np, pandas as pd
 from serializor import dumps, loads
@@ -65,8 +65,8 @@ def pkg_tester(val: Any, rounds: int) -> Any:
 
 
 def pkg_tester_validate(val: Any, rounds: int) -> Any:
-    res = pkg_tester(val, rounds)
-    print("#Validate#:".ljust(10), val == res, sep="\t")
+    de = pkg_tester(val, rounds)
+    print("#Validate#:".ljust(10), de == val, sep="\t")
     print()
 
 
@@ -274,7 +274,7 @@ def test_datetime() -> None:
         print(f"Decode Value:".ljust(10), de, type(de), sep="\t")
         print(f"Encode Perf.:".ljust(10), timeit(lambda: dumps(val), number=rounds), sep="\t")
         print(f"Decode Perf.:".ljust(10), timeit(lambda: loads(en), number=rounds), sep="\t")
-        print("#Validate#:".ljust(10), val == compare, sep="\t")
+        print("#Validate#:".ljust(10), de == compare, sep="\t")
 
     # fmt: off
     tzinfo = datetime.timezone(datetime.timedelta(hours=8), "CUS")
@@ -289,6 +289,9 @@ def test_datetime() -> None:
     compare_tester(ts_tz, dt_tz, rounds)  # `<pandas.Timestamp>`
     dt64 = np.datetime64(dt)
     pkg_tester_validate(dt64, rounds)  # `<numpy.datetime64>`
+    stm = time.localtime(dt.timestamp())
+    stm_dt = datetime.datetime(*stm[:6])
+    compare_tester(stm, stm_dt, rounds)
 
     count, rounds = 10, 1_000_000
     dt_lst = [dt for _ in range(count)]
@@ -301,6 +304,9 @@ def test_datetime() -> None:
     compare_tester(ts_tz_lst, dt_tz_lst, rounds)  # `<list[pandas.Timestamp]>`
     dt64_lst = [dt64 for _ in range(count)]
     compare_tester(dt64_lst, dt_lst, rounds)  # `<list[numpy.datetime64]>`
+    stm_lst = [stm for _ in range(count)]
+    stm_dt_lst = [stm_dt for _ in range(count)]
+    compare_tester(stm_lst, stm_dt_lst, rounds)
 
     count, rounds = 10, 1_000_000
     dt_dict = {str(i): dt for i in range(count)}
@@ -313,6 +319,9 @@ def test_datetime() -> None:
     compare_tester(ts_tz_dict, dt_tz_dict, rounds)  # `<dict[int, pandas.Timestamp]>`
     dt64_dict = {str(i): dt64 for i in range(count)}
     compare_tester(dt64_dict, dt_dict, rounds)  # `<dict[int, numpy.datetime64]>`
+    stm_dict = {str(i): stm for i in range(count)}
+    stm_dt_dict = {str(i): stm_dt for i in range(count)}
+    compare_tester(stm_dict, stm_dt_dict, rounds)
 
 
 def test_time() -> None:
@@ -351,7 +360,7 @@ def test_timedelta() -> None:
         print(f"Decode Value:".ljust(10), de, type(de), sep="\t")
         print(f"Encode Perf.:".ljust(10), timeit(lambda: dumps(val), number=rounds), sep="\t")
         print(f"Decode Perf.:".ljust(10), timeit(lambda: loads(en), number=rounds), sep="\t")
-        print("#Validate#:".ljust(10), val == compare, sep="\t")
+        print("#Validate#:".ljust(10), de == compare, sep="\t")
 
     rounds = 1_000_000
     dl1 = datetime.timedelta(1)
@@ -395,7 +404,7 @@ def test_mixed() -> None:
     print(" Test mix serialization ".center(80, "="))
 
     # fmt: off
-    def mixed_tester(val: Any, round: int) -> Any:
+    def mixed_tester(val: Any, rounds: int) -> Any:
         print("-" * 80)
         print(f"Value: {type(val)}, {val[0]}")
         en = dumps(val)
@@ -404,7 +413,7 @@ def test_mixed() -> None:
         print(f"Decode Value:".ljust(10), de[0], type(de), sep="\t")
         print(f"Encode Perf.:".ljust(10), timeit(lambda: dumps(val), number=rounds), sep="\t")
         print(f"Decode Perf.:".ljust(10), timeit(lambda: loads(en), number=rounds), sep="\t")
-        print("#Validate#:".ljust(10), val == de, sep="\t")
+        print("#Validate#:".ljust(10), de == val, sep="\t")
         print()
 
 
@@ -432,7 +441,7 @@ def test_ndarray() -> None:
         print(f"Decode Value:\n{de[0]}", type(de))
         print(f"Encode Perf.:".ljust(10), timeit(lambda: dumps(val), number=rounds), sep="\t")
         print(f"Decode Perf.:".ljust(10), timeit(lambda: loads(en), number=rounds), sep="\t")
-        print("#Validate#:".ljust(10), (val == de).all(), sep="\t")
+        print("#Validate#:".ljust(10), (de == val).all(), sep="\t")
         print()
 
 

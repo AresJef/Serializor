@@ -17,8 +17,10 @@ Supported data types includes:
 - bytes: `bytes` -> deserialize to `bytes`
 - date: `datetime.date` -> deserialize to `datetime.date`
 - time: `datetime.time` -> deserialize to `datetime.time`
-- datetime: `datetime.datetime` & `pandas.Timestamp` & `numpy.datetime64` -> deserialize to `datetime.datetime`
-- timedelta: `datetime.timedelta` & `pandas.Timedelta` & `numpy.timedelta64` -> deserialize to `datetime.timedelta`
+- datetime: `datetime.datetime` & `pandas.Timestamp` -> deserialize to `datetime.datetime`
+- datetime64*: `numpy.datetime64` & `time.struct_time` -> deserialize to `datetime.datetime`
+- timedelta: `datetime.timedelta` & `pandas.Timedelta` -> deserialize to `datetime.timedelta`
+- timedelta64: `numpy.timedelta64` -> deserialize to `datetime.timedelta`
 - None: `None` & `numpy.nan` -> deserialize to `None`
 - list: `list` of above supported data types -> deserialize to `list`
 - tuple: `tuple` of above supported data types -> deserialize to `list`
@@ -62,7 +64,7 @@ All supported boolean data types will be deserialized to python
 native `bool` type.
 
 ``` python
-import serializor as sr
+import serializor as sr, numpy as np
 
 ## Python native boolean
 obj = True
@@ -82,7 +84,7 @@ All supported integer data types will be deserialized to python
 native `int` type.
 
 ``` python
-import serializor as sr
+import serializor as sr, numpy as np
 
 ## Python native integer
 obj = 1
@@ -108,7 +110,7 @@ All supported float data types will be deserialized to python
 native `float` type.
 
 ``` python
-import serializor as sr
+import serializor as sr, numpy as np
 
 ## Python native float
 obj = 1.0
@@ -197,7 +199,7 @@ All supported datetime data types will be deserialized to python
 native `datetime.datetime` type.
 
 ``` python
-import serializor as sr, datetime, numpy as np
+import serializor as sr, datetime, numpy as np, time
 
 # Datetime (timezone-naive) / pandas.Timestamp
 obj = datetime.datetime(2023, 8, 27, 21, 16, 4, 780600)
@@ -217,6 +219,12 @@ obj = np.datetime64('2023-08-27T21:16:04.780600')
 s = sr.dumps(obj)
 d = sr.loads(s)
 # 2023-08-27 21:16:04.780600 <class 'datetime.datetime'>
+
+# Time struct_time
+obj = time.struct_time((2023, 8, 27, 21, 16, 4, 0, 0, 0))
+s = sr.dumps(obj)
+d = sr.loads(s)
+# 2023-08-27 21:16:04 <class 'datetime.datetime'>
 ```
 
 ### Timedelta

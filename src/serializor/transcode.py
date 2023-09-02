@@ -22,8 +22,8 @@ datetime.import_datetime()
 # Python imports
 from typing import Type
 from decimal import Decimal
-import orjson, pandas as pd
-import datetime, numpy as np
+import datetime, time
+import orjson, pandas as pd, numpy as np
 from cytimes import cydatetime as cydt
 from _collections_abc import dict_values, dict_keys
 
@@ -122,6 +122,31 @@ def _encode_datetime(obj: object) -> list:
 @cython.cfunc
 @cython.inline(True)
 @cython.exceptval(check=False)
+def _encode_datetime64(obj: object) -> list:
+    return [UNIQUE_KEY, DATETIME_NAIVE_KEY, cydt.dt64_to_microseconds(obj)]
+
+
+@cython.cfunc
+@cython.inline(True)
+@cython.exceptval(check=False)
+def _encode_struct_time(val: object) -> list:
+    dt: datetime.datetime = cydt.gen_dt(
+        val.tm_year,
+        val.tm_mon,
+        val.tm_mday,
+        val.tm_hour,
+        val.tm_min,
+        val.tm_sec,
+        0,
+        None,
+        0,
+    )
+    return [UNIQUE_KEY, DATETIME_NAIVE_KEY, cydt.dt_to_microseconds(dt)]
+
+
+@cython.cfunc
+@cython.inline(True)
+@cython.exceptval(check=False)
 def _encode_time(obj: object) -> list:
     us: cython.longlong = cydt.time_to_microseconds(obj)
     tzinfo: object = cydt.get_time_tzinfo(obj)
@@ -141,13 +166,6 @@ def _encode_time(obj: object) -> list:
 @cython.exceptval(check=False)
 def _encode_timedelta(obj: object) -> list:
     return [UNIQUE_KEY, TIMEDELTA_KEY, cydt.delta_to_microseconds(obj)]
-
-
-@cython.cfunc
-@cython.inline(True)
-@cython.exceptval(check=False)
-def _encode_datetime64(obj: object) -> list:
-    return [UNIQUE_KEY, DATETIME_NAIVE_KEY, cydt.dt64_to_microseconds(obj)]
 
 
 @cython.cfunc
@@ -273,10 +291,11 @@ ENCODERS: dict[Type, cython.cfunc] = {
     datetime.date: _encode_date,
     datetime.datetime: _encode_datetime,
     pd.Timestamp: _encode_datetime,
+    np.datetime64: _encode_datetime64,
+    time.struct_time: _encode_struct_time,
+    datetime.time: _encode_time,
     datetime.timedelta: _encode_timedelta,
     pd.Timedelta: _encode_timedelta,
-    datetime.time: _encode_time,
-    np.datetime64: _encode_datetime64,
     np.timedelta64: _encode_timedelta64,
     type(None): _through,
     # Complex types
@@ -330,8 +349,10 @@ def dumps(obj: object) -> bytes:
     - bytes: `bytes` -> deserialized to `bytes`
     - date: `datetime.date` -> deserialized to `datetime.date`
     - time: `datetime.time` -> deserialized to `datetime.time`
-    - datetime: `datetime.datetime` % `pandas.Timestamp` & `numpy.datetime64` -> deserialized to `datetime.datetime`
-    - timedelta: `datetime.timedelta` & `pandas.Timedelta` & `numpy.timedelta64` -> deserialized to `datetime.timedelta`
+    - datetime: `datetime.datetime` & `pandas.Timestamp` -> deserialize to `datetime.datetime`
+    - datetime64*: `numpy.datetime64` & `time.struct_time` -> deserialize to `datetime.datetime`
+    - timedelta: `datetime.timedelta` & `pandas.Timedelta` -> deserialize to `datetime.timedelta`
+    - timedelta64: `numpy.timedelta64` -> deserialize to `datetime.timedelta`
     - None: `None` & `numpy.nan` -> deserialized to `None`
     - list: `list` of above supported data types -> deserialized to `list`
     - tuple: `tuple` of above supported data types -> deserialized to `list`
