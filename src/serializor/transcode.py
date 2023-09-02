@@ -175,6 +175,7 @@ def _encode_timedelta64(obj: object) -> list:
     return [UNIQUE_KEY, TIMEDELTA_KEY, cydt.delta64_to_microseconds(obj)]
 
 
+# Complex types
 @cython.cfunc
 @cython.inline(True)
 @cython.exceptval(check=False)
