@@ -1,7 +1,6 @@
 include LICENSE
 include README.md
 
-include src/serializor/*.c
 include src/serializor/*.pxd
 include src/serializor/*.py
 include src/serializor/*.pyx
