@@ -329,12 +329,9 @@ def _fallback_handler(obj: object) -> object:
 @cython.inline(True)
 def encode(obj: object) -> bytes:
     """cfunction for `dumps`."""
-    try:
-        return orjson.dumps(
-            obj, default=_fallback_handler, option=orjson.OPT_PASSTHROUGH_DATETIME
-        )
-    except Exception as err:
-        raise SerializorError("<Serializor> %s" % err)
+    return orjson.dumps(
+        obj, default=_fallback_handler, option=orjson.OPT_PASSTHROUGH_DATETIME
+    )
 
 
 @cython.ccall
@@ -369,7 +366,10 @@ def dumps(obj: object) -> bytes:
     :raises SerializorError: If any error occurs.
     :return: `<bytes>` The serialized data.
     """
-    return encode(obj)
+    try:
+        return encode(obj)
+    except Exception as err:
+        raise SerializorError("<Serializor> %s" % err)
 
 
 # Decode ---------------------------------------------------------------------------------------------------------------
@@ -484,10 +484,7 @@ def _decode_dict(data: dict) -> object:
 @cython.inline(True)
 def decode(data: bytes) -> object:
     """cfunction for `loads`."""
-    try:
-        return _decode_handler(orjson.loads(data))
-    except Exception as err:
-        raise SerializorError("<Serializor> %s" % err)
+    return _decode_handler(orjson.loads(data))
 
 
 @cython.ccall
@@ -495,7 +492,10 @@ def loads(data: bytes) -> object:
     """Deserialize the value to its original (or compatible) python dtype.
     Must be used with the `dumps` function in this module.
     """
-    return decode(data)
+    try:
+        return decode(data)
+    except Exception as err:
+        raise SerializorError("<Serializor> %s" % err)
 
 
 # Exceptions -----------------------------------------------------------------------------------------------------------
