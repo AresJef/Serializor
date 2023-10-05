@@ -1,2 +1,2 @@
-cytimes>=0.1.11.7
+cytimes>=0.1.11.10
 orjson>=3.9.5
