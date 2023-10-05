@@ -8,7 +8,7 @@ jobs:
     name: Build wheels on ${{matrix.arch}} for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     env:
-      CIBW_SKIP: "cp27-* cp34-* cp35-* pp27-* cp36-musllinux_aarch64 pp37-manylinux_aarch64 cp36-manylinux_aarch64 cp310-win32 cp311-win32 pp3*"
+      CIBW_SKIP: "cp27-* cp34-* cp35-* pp27-* cp36-musllinux_aarch64 pp37-manylinux_aarch64 cp36-manylinux_aarch64 cp310-win32 cp311-win32 cp310-musllinux_i686 cp311-musllinux_i686 pp3*"
       CIBW_BEFORE_BUILD: "pip install Cython==3.0.2"
     strategy:
       matrix:
