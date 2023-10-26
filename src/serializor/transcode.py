@@ -20,12 +20,15 @@ np.import_array()
 datetime.import_datetime()
 
 # Python imports
-from typing import Type
+import datetime, numpy as np
 from decimal import Decimal
-import datetime, time
-import orjson, pandas as pd, numpy as np
-from cytimes import cydatetime as cydt
+from time import struct_time
 from _collections_abc import dict_values, dict_keys
+from pandas import Series, DataFrame, Timestamp
+from pandas import Timedelta, DatetimeIndex, TimedeltaIndex
+from orjson import OPT_PASSTHROUGH_DATETIME
+from orjson import loads as orjson_loads, dumps as orjson_dumps
+from cytimes import cydatetime as cydt
 
 __all__ = ["dumps", "loads", "SerializorError"]
 
@@ -193,7 +196,7 @@ def _encode_ndarray(obj: object) -> list:
 @cython.cfunc
 @cython.inline(True)
 @cython.exceptval(check=False)
-def _encode_series(obj: pd.Series) -> list:
+def _encode_series(obj: Series) -> list:
     kind: str = obj.dtype.kind
     name: object = obj.name
     # Object dtype
@@ -229,7 +232,7 @@ def _encode_series(obj: pd.Series) -> list:
 @cython.cfunc
 @cython.inline(True)
 @cython.exceptval(check=False)
-def _encode_dataframe(obj: pd.DataFrame) -> list:
+def _encode_dataframe(obj: DataFrame) -> list:
     # Iterate over columns
     data: list = []
     kind: str
@@ -267,7 +270,7 @@ def _encode_dataframe(obj: pd.DataFrame) -> list:
 
 
 # Encoder table
-ENCODERS: dict[Type, cython.cfunc] = {
+ENCODERS: dict[type, cython.cfunc] = {
     # Base types
     bool: _through,
     np.bool_: _encode_bool,
@@ -291,12 +294,12 @@ ENCODERS: dict[Type, cython.cfunc] = {
     bytes: _encode_bytes,
     datetime.date: _encode_date,
     datetime.datetime: _encode_datetime,
-    pd.Timestamp: _encode_datetime,
+    Timestamp: _encode_datetime,
     np.datetime64: _encode_datetime64,
-    time.struct_time: _encode_struct_time,
+    struct_time: _encode_struct_time,
     datetime.time: _encode_time,
     datetime.timedelta: _encode_timedelta,
-    pd.Timedelta: _encode_timedelta,
+    Timedelta: _encode_timedelta,
     np.timedelta64: _encode_timedelta64,
     type(None): _through,
     # Complex types
@@ -309,8 +312,8 @@ ENCODERS: dict[Type, cython.cfunc] = {
     dict: _through,
     np.record: _encode_sequence,
     np.ndarray: _encode_ndarray,
-    pd.Series: _encode_series,
-    pd.DataFrame: _encode_dataframe,
+    Series: _encode_series,
+    DataFrame: _encode_dataframe,
 }
 
 
@@ -329,9 +332,7 @@ def _fallback_handler(obj: object) -> object:
 @cython.inline(True)
 def encode(obj: object) -> bytes:
     """cfunction for `dumps`."""
-    return orjson.dumps(
-        obj, default=_fallback_handler, option=orjson.OPT_PASSTHROUGH_DATETIME
-    )
+    return orjson_dumps(obj, default=_fallback_handler, option=OPT_PASSTHROUGH_DATETIME)
 
 
 @cython.ccall
@@ -348,7 +349,7 @@ def dumps(obj: object) -> bytes:
     - date: `datetime.date` -> deserialized to `datetime.date`
     - time: `datetime.time` -> deserialized to `datetime.time`
     - datetime: `datetime.datetime` & `pandas.Timestamp` -> deserialize to `datetime.datetime`
-    - datetime64*: `numpy.datetime64` & `time.struct_time` -> deserialize to `datetime.datetime`
+    - datetime64*: `numpy.datetime64` & `struct_time` -> deserialize to `datetime.datetime`
     - timedelta: `datetime.timedelta` & `pandas.Timedelta` -> deserialize to `datetime.timedelta`
     - timedelta64: `numpy.timedelta64` -> deserialize to `datetime.timedelta`
     - None: `None` & `numpy.nan` -> deserialized to `None`
@@ -410,31 +411,31 @@ def _decode_list(data: list) -> object:
                     elif skey == PDSERIES_OBJT_KEY:
                         dic[name] = [_decode_handler(i) for i in vals]
                     elif skey == PDSERIES_TSNA_KEY:
-                        dic[name] = pd.DatetimeIndex(vals)
+                        dic[name] = DatetimeIndex(vals)
                     elif skey == PDSERIES_TSAW_KEY:
                         tzinfo: object = cydt.gen_timezone(col[3], col[4])
-                        dic[name] = pd.DatetimeIndex(vals, tz=tzinfo)
+                        dic[name] = DatetimeIndex(vals, tz=tzinfo)
                     elif skey == PDSERIES_TMDL_KEY:
-                        dic[name] = pd.TimedeltaIndex(vals)
+                        dic[name] = TimedeltaIndex(vals)
                     else:
                         raise TypeError
-                return pd.DataFrame(dic)
+                return DataFrame(dic)
             # . pandas.Series (Json)
             if key == PDSERIES_JSON_KEY and _len_ == 4 and is_list(val):
-                return pd.Series(val, name=data[3])
+                return Series(val, name=data[3])
             # . pandas.Series (Object)
             if key == PDSERIES_OBJT_KEY and _len_ == 4 and is_list(val):
-                return pd.Series([_decode_handler(i) for i in val], name=data[3])
+                return Series([_decode_handler(i) for i in val], name=data[3])
             # . pandas.Series (Timestamp naive)
             if key == PDSERIES_TSNA_KEY and _len_ == 4 and is_list(val):
-                return pd.Series(pd.DatetimeIndex(val), name=data[3])
+                return Series(DatetimeIndex(val), name=data[3])
             # . pandas.Series (Timestamp aware)
             if key == PDSERIES_TSAW_KEY and _len_ == 6 and is_list(val):
                 tzinfo: object = cydt.gen_timezone(data[4], data[5])
-                return pd.Series(pd.DatetimeIndex(val, tz=tzinfo), name=data[3])
+                return Series(DatetimeIndex(val, tz=tzinfo), name=data[3])
             # . pandas.Series (Timedelta)
             if key == PDSERIES_TMDL_KEY and _len_ == 4 and is_list(val):
-                return pd.Series(pd.TimedeltaIndex(val), name=data[3])
+                return Series(TimedeltaIndex(val), name=data[3])
             # . datetime-niave
             if key == DATETIME_NAIVE_KEY and _len_ == 3 and is_int(val):
                 return cydt.dt_fr_microseconds(val)
@@ -484,7 +485,7 @@ def _decode_dict(data: dict) -> object:
 @cython.inline(True)
 def decode(data: bytes) -> object:
     """cfunction for `loads`."""
-    return _decode_handler(orjson.loads(data))
+    return _decode_handler(orjson_loads(data))
 
 
 @cython.ccall
