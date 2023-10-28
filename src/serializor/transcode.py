@@ -8,11 +8,12 @@ from cython.cimports import numpy as np  # type: ignore
 from cython.cimports.numpy import PyArray_ToList as np_tolist  # type: ignore
 from cython.cimports.numpy import PyArray_FROM_O as np_from_list  # type: ignore
 from cython.cimports.cpython import datetime  # type: ignore
-from cython.cimports.cpython.list import PyList_Check as is_list  # type: ignore
-from cython.cimports.cpython.list import PyList_Size as len_list  # type: ignore
-from cython.cimports.cpython.dict import PyDict_Check as is_dict  # type: ignore
 from cython.cimports.cpython.int import PyInt_Check as is_int  # type: ignore
 from cython.cimports.cpython.string import PyString_Check as is_str  # type: ignore
+from cython.cimports.cpython.list import PyList_Check as is_list  # type: ignore
+from cython.cimports.cpython.list import PyList_Size as len_list  # type: ignore
+from cython.cimports.cpython.list import PyList_Append as list_append  # type: ignore
+from cython.cimports.cpython.dict import PyDict_Check as is_dict  # type: ignore
 from cython.cimports.cytimes import cydatetime as cydt  # type: ignore
 
 np.import_array()
@@ -334,7 +335,6 @@ def encode(obj: object) -> bytes:
     return orjson_dumps(obj, default=_fallback_handler, option=OPT_PASSTHROUGH_DATETIME)
 
 
-@cython.ccall
 def dumps(obj: object) -> bytes:
     """Serielize an object to bytes.
 
@@ -470,7 +470,10 @@ def _decode_list(data: list) -> object:
             pass
 
     # Normal Key
-    return [_decode_handler(i) for i in data]
+    res: list = []
+    for val in data:
+        list_append(res, _decode_handler(val))
+    return res
 
 
 @cython.cfunc
@@ -487,7 +490,6 @@ def decode(data: bytes) -> object:
     return _decode_handler(orjson_loads(data))
 
 
-@cython.ccall
 def loads(data: bytes) -> object:
     """Deserialize the value to its original (or compatible) python dtype.
     Must be used with the `dumps` function in this module.
