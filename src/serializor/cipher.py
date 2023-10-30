@@ -10,7 +10,7 @@ from cython.cimports.cpython.bytearray import PyByteArray_Check as is_bytearray 
 from cython.cimports.serializor.transcode import encode, decode  # type: ignore
 
 # Python imports
-from hashlib import md5
+from hashlib import sha256
 from typing import Any, Union
 from base64 import urlsafe_b64encode
 from cryptography.fernet import Fernet
@@ -121,7 +121,7 @@ class Cipher:
                     repr(value), type(value)
                 )
             )
-        return md5(b_value).digest()
+        return sha256(b_value).digest()
 
     @cython.cfunc
     @cython.inline(True)
