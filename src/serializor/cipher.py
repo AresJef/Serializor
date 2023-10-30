@@ -60,8 +60,14 @@ class Cipher:
     @cython.inline(True)
     def _encrypt(self, obj: object) -> bytes:
         "(cfunc) Encrypts the given python object `<bytes>`."
-        value: bytes = encode(obj)
-        return self._cipher.encrypt(value)
+        try:
+            value: bytes = encode(obj)
+            return self._cipher.encrypt(value)
+        except Exception as err:
+            raise CipherError(
+                "<Cipher> Failed to encrypt object {}.\n"
+                "Error: {}".format(repr(obj), err)
+            )
 
     def decrypt(self, crypt: bytes) -> Any:
         "Decrypts the given encrypted data `<Any>`."
@@ -71,8 +77,14 @@ class Cipher:
     @cython.inline(True)
     def _decrypt(self, crypt: bytes) -> object:
         "(cfunc) Decrypts the given encrypted data `<Any>`."
-        crypt = self._cipher.decrypt(crypt)
-        return decode(crypt)
+        try:
+            crypt = self._cipher.decrypt(crypt)
+            return decode(crypt)
+        except Exception as err:
+            raise CipherError(
+                "<Cipher> Failed to decrypt data {}.\n"
+                "Error: {}".format(repr(crypt), err)
+            )
 
     # Utils ---------------------------------------------------------------------------------
     @cython.cfunc
@@ -148,12 +160,12 @@ class Cipher:
 
 def encrypt(obj: Any, key: Union[str, bytes]) -> bytes:
     "Encrypts the given python object `<bytes>`."
-    return Cipher(key).encrypt(obj)
+    return Cipher(key)._encrypt(obj)
 
 
 def decrypt(crypt: bytes, key: Union[str, bytes]) -> Any:
     "Decrypts the given encrypted data `<Any>`."
-    return Cipher(key).decrypt(crypt)
+    return Cipher(key)._decrypt(crypt)
 
 
 # Exceptions -----------------------------------------------------------------------------------------------------------
