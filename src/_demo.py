@@ -525,6 +525,21 @@ def test_pdDataFrame() -> None:
     # fmt: on
 
 
+def test_cipher() -> None:
+    from serializor.cipher import encrypt, decrypt
+
+    key = b"show me the money xasdasdasd"
+    data = {"a": 1.23, "c": {"d": 123}}
+
+    a = encrypt(data, key)
+    print(a, type(a))
+    print()
+
+    b = decrypt(a, key)
+    print(b, type(b))
+    print()
+
+
 if __name__ == "__main__":
     test_boolean()
     test_integer()
@@ -541,3 +556,4 @@ if __name__ == "__main__":
     test_ndarray()
     test_psSeries()
     test_pdDataFrame()
+    test_cipher()

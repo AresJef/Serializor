@@ -27,9 +27,15 @@ def extension(filename: str, include_np: bool, *extra_compile_args: str) -> Exte
 
 # Build Extensions
 if platform.system() == "Windows":
-    extensions = [extension("transcode.py", True)]
+    extensions = [
+        extension("cipher.py", False),
+        extension("transcode.py", True),
+    ]
 else:
-    extensions = [extension("transcode.py", True, "-Wno-unreachable-code")]
+    extensions = [
+        extension("cipher.py", False, "-Wno-unreachable-code"),
+        extension("transcode.py", True, "-Wno-unreachable-code"),
+    ]
 
 
 # Build

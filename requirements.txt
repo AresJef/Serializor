@@ -1,3 +1,4 @@
+cryptography>=41.0.1
 Cython==3.0.4
 cytimes>=0.1.12.2
 orjson>=3.9.5
