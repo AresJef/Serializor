@@ -4,7 +4,7 @@
 
 # Cython imports
 import cython
-from cython.cimports.cpython.unicode import PyUnicode_READ_CHAR as str_loc  # type: ignore
+from cython.cimports.cpython.unicode import PyUnicode_READ_CHAR as read_char  # type: ignore
 
 # Python imports
 import numpy as np
@@ -16,11 +16,11 @@ FLOAT: str = "f"
 INT: str = "i"
 NONE: str = "n"
 # . identifier
-STR_ID: cython.Py_UCS4 = str_loc(STR, 0)
-BOOL_ID: cython.Py_UCS4 = str_loc(BOOL, 0)
-FLOAT_ID: cython.Py_UCS4 = str_loc(FLOAT, 0)
-INT_ID: cython.Py_UCS4 = str_loc(INT, 0)
-NONE_ID: cython.Py_UCS4 = str_loc(NONE, 0)
+STR_ID: cython.Py_UCS4 = read_char(STR, 0)
+BOOL_ID: cython.Py_UCS4 = read_char(BOOL, 0)
+FLOAT_ID: cython.Py_UCS4 = read_char(FLOAT, 0)
+INT_ID: cython.Py_UCS4 = read_char(INT, 0)
+NONE_ID: cython.Py_UCS4 = read_char(NONE, 0)
 # . variant
 BOOL_TRUE: str = BOOL + "1"  # 'o1'
 BOOL_FALSE: str = BOOL + "0"  # 'o0'
@@ -31,43 +31,43 @@ TIME: str = "t"
 DATETIME: str = "z"
 TIMEDELTA: str = "l"
 # . identifier
-DATE_ID: cython.Py_UCS4 = str_loc(DATE, 0)
-TIME_ID: cython.Py_UCS4 = str_loc(TIME, 0)
-DATETIME_ID: cython.Py_UCS4 = str_loc(DATETIME, 0)
-TIMEDELTA_ID: cython.Py_UCS4 = str_loc(TIMEDELTA, 0)
+DATE_ID: cython.Py_UCS4 = read_char(DATE, 0)
+TIME_ID: cython.Py_UCS4 = read_char(TIME, 0)
+DATETIME_ID: cython.Py_UCS4 = read_char(DATETIME, 0)
+TIMEDELTA_ID: cython.Py_UCS4 = read_char(TIMEDELTA, 0)
 
 # Numeric Types ---------------------------------------------------------------------
 DECIMAL: str = "e"
 COMPLEX: str = "c"
 # . identifier
-DECIMAL_ID: cython.Py_UCS4 = str_loc(DECIMAL, 0)
-COMPLEX_ID: cython.Py_UCS4 = str_loc(COMPLEX, 0)
+DECIMAL_ID: cython.Py_UCS4 = read_char(DECIMAL, 0)
+COMPLEX_ID: cython.Py_UCS4 = read_char(COMPLEX, 0)
 
 # Bytes Types -----------------------------------------------------------------------
 BYTES: str = "b"
 # . identifier
-BYTES_ID: cython.Py_UCS4 = str_loc(BYTES, 0)
+BYTES_ID: cython.Py_UCS4 = read_char(BYTES, 0)
 
 # Mapping ---------------------------------------------------------------------------
 DICT: str = "D"
 # . identifier
-DICT_ID: cython.Py_UCS4 = str_loc(DICT, 0)
+DICT_ID: cython.Py_UCS4 = read_char(DICT, 0)
 
 # Sequence Types --------------------------------------------------------------------
 LIST: str = "L"
 TUPLE: str = "T"
 SET: str = "E"
 # . identifier
-LIST_ID: cython.Py_UCS4 = str_loc(LIST, 0)
-TUPLE_ID: cython.Py_UCS4 = str_loc(TUPLE, 0)
-SET_ID: cython.Py_UCS4 = str_loc(SET, 0)
+LIST_ID: cython.Py_UCS4 = read_char(LIST, 0)
+TUPLE_ID: cython.Py_UCS4 = read_char(TUPLE, 0)
+SET_ID: cython.Py_UCS4 = read_char(SET, 0)
 
 # Numpy Types -----------------------------------------------------------------------
 DATETIME64: str = "M"
 TIMEDELTA64: str = "m"
 # . identifier
-DATETIME64_ID: cython.Py_UCS4 = str_loc(DATETIME64, 0)
-TIMEDELTA64_ID: cython.Py_UCS4 = str_loc(TIMEDELTA64, 0)
+DATETIME64_ID: cython.Py_UCS4 = read_char(DATETIME64, 0)
+TIMEDELTA64_ID: cython.Py_UCS4 = read_char(TIMEDELTA64, 0)
 # . variant
 DATETIME64_Y: str = DATETIME64 + "Y"  # 'MY'
 DATETIME64_M: str = DATETIME64 + "M"  # 'MM'
@@ -111,17 +111,17 @@ NDARRAY_DTYPE_COMPLEX: str = np.array(1 + 1j, dtype=np.complex128).dtype.kind  #
 NDARRAY_DTYPE_BYTES: str = np.array(b"", dtype="S").dtype.kind  # 'S'
 NDARRAY_DTYPE_UNICODE: str = np.array("", dtype="U").dtype.kind  # 'U'
 # . identifier
-NDARRAY_ID: cython.Py_UCS4 = str_loc(NDARRAY, 0)
-NDARRAY_DTYPE_OBJECT_ID: cython.Py_UCS4 = str_loc(NDARRAY_DTYPE_OBJECT, 0)
-NDARRAY_DTYPE_FLOAT_ID: cython.Py_UCS4 = str_loc(NDARRAY_DTYPE_FLOAT, 0)
-NDARRAY_DTYPE_INT_ID: cython.Py_UCS4 = str_loc(NDARRAY_DTYPE_INT, 0)
-NDARRAY_DTYPE_UINT_ID: cython.Py_UCS4 = str_loc(NDARRAY_DTYPE_UINT, 0)
-NDARRAY_DTYPE_BOOL_ID: cython.Py_UCS4 = str_loc(NDARRAY_DTYPE_BOOL, 0)
-NDARRAY_DTYPE_DT64_ID: cython.Py_UCS4 = str_loc(NDARRAY_DTYPE_DT64, 0)
-NDARRAY_DTYPE_TD64_ID: cython.Py_UCS4 = str_loc(NDARRAY_DTYPE_TD64, 0)
-NDARRAY_DTYPE_COMPLEX_ID: cython.Py_UCS4 = str_loc(NDARRAY_DTYPE_COMPLEX, 0)
-NDARRAY_DTYPE_BYTES_ID: cython.Py_UCS4 = str_loc(NDARRAY_DTYPE_BYTES, 0)
-NDARRAY_DTYPE_UNICODE_ID: cython.Py_UCS4 = str_loc(NDARRAY_DTYPE_UNICODE, 0)
+NDARRAY_ID: cython.Py_UCS4 = read_char(NDARRAY, 0)
+NDARRAY_DTYPE_OBJECT_ID: cython.Py_UCS4 = read_char(NDARRAY_DTYPE_OBJECT, 0)
+NDARRAY_DTYPE_FLOAT_ID: cython.Py_UCS4 = read_char(NDARRAY_DTYPE_FLOAT, 0)
+NDARRAY_DTYPE_INT_ID: cython.Py_UCS4 = read_char(NDARRAY_DTYPE_INT, 0)
+NDARRAY_DTYPE_UINT_ID: cython.Py_UCS4 = read_char(NDARRAY_DTYPE_UINT, 0)
+NDARRAY_DTYPE_BOOL_ID: cython.Py_UCS4 = read_char(NDARRAY_DTYPE_BOOL, 0)
+NDARRAY_DTYPE_DT64_ID: cython.Py_UCS4 = read_char(NDARRAY_DTYPE_DT64, 0)
+NDARRAY_DTYPE_TD64_ID: cython.Py_UCS4 = read_char(NDARRAY_DTYPE_TD64, 0)
+NDARRAY_DTYPE_COMPLEX_ID: cython.Py_UCS4 = read_char(NDARRAY_DTYPE_COMPLEX, 0)
+NDARRAY_DTYPE_BYTES_ID: cython.Py_UCS4 = read_char(NDARRAY_DTYPE_BYTES, 0)
+NDARRAY_DTYPE_UNICODE_ID: cython.Py_UCS4 = read_char(NDARRAY_DTYPE_UNICODE, 0)
 # . variant dtype
 NDARRAY_DTYPE_DT64_Y: str = NDARRAY_DTYPE_DT64 + "Y"  # 'MY'
 NDARRAY_DTYPE_DT64_M: str = NDARRAY_DTYPE_DT64 + "M"  # 'MM'
@@ -165,13 +165,13 @@ NDARRAY_UNICODE: str = NDARRAY + NDARRAY_DTYPE_UNICODE  # 'NU'
 DATETIMEINDEX: str = "Z"
 TIMEDELTAINDEX: str = "X"
 # . identifier
-DATETIMEINDEX_ID: cython.Py_UCS4 = str_loc(DATETIMEINDEX, 0)
-TIMEDELTAINDEX_ID: cython.Py_UCS4 = str_loc(TIMEDELTAINDEX, 0)
+DATETIMEINDEX_ID: cython.Py_UCS4 = read_char(DATETIMEINDEX, 0)
+TIMEDELTAINDEX_ID: cython.Py_UCS4 = read_char(TIMEDELTAINDEX, 0)
 
 # Pandas.Series ---------------------------------------------------------------------
 SERIES: str = "I"
 # . identifier
-SERIES_ID: cython.Py_UCS4 = str_loc(SERIES, 0)
+SERIES_ID: cython.Py_UCS4 = read_char(SERIES, 0)
 # . variant
 SERIES_OBJECT: str = SERIES + NDARRAY_DTYPE_OBJECT  # 'IO'
 SERIES_FLOAT: str = SERIES + NDARRAY_DTYPE_FLOAT  # 'If'
@@ -185,7 +185,7 @@ SERIES_UNICODE: str = SERIES + NDARRAY_DTYPE_UNICODE  # 'IU'
 # Pandas.DataFrame ------------------------------------------------------------------
 DATAFRAME: str = "F"
 # . identifier
-DATAFRAME_ID: cython.Py_UCS4 = str_loc(DATAFRAME, 0)
+DATAFRAME_ID: cython.Py_UCS4 = read_char(DATAFRAME, 0)
 # . variant
 DATAFRAME_COL_OBJECT: str = NDARRAY_DTYPE_OBJECT  # 'O'
 DATAFRAME_COL_FLOAT: str = NDARRAY_DTYPE_FLOAT  # 'f'

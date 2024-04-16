@@ -7,7 +7,7 @@ import cython
 from cython.cimports import numpy as np  # type: ignore
 from cython.cimports.cpython import datetime  # type: ignore
 from cython.cimports.libc.math import isnormal  # type: ignore
-from cython.cimports.cpython.unicode import PyUnicode_READ_CHAR as str_loc  # type: ignore
+from cython.cimports.cpython.unicode import PyUnicode_READ_CHAR as read_char  # type: ignore
 from cython.cimports.cpython.unicode import PyUnicode_GET_LENGTH as str_len  # type: ignore
 from cython.cimports.cpython.unicode import PyUnicode_Substring as str_substr  # type: ignore
 from cython.cimports.cpython.set import PySet_GET_SIZE as set_len  # type: ignore
@@ -672,7 +672,7 @@ def _serialize_ndarray(obj: np.ndarray) -> str:
          refer to the `_serialize_ndarray_object()` function.
     """
     # Get ndarray dtype
-    dtype: cython.Py_UCS4 = str_loc(obj.dtype.kind, 0)
+    dtype: cython.Py_UCS4 = read_char(obj.dtype.kind, 0)
 
     # Get ndarray dimensions
     ndim: cython.Py_ssize_t = obj.ndim
@@ -1347,7 +1347,7 @@ def _serialize_series(obj: Series) -> str:
     values: np.ndarray = obj.values
 
     # Get Series dtype
-    dtype: cython.Py_UCS4 = str_loc(values.dtype.kind, 0)
+    dtype: cython.Py_UCS4 = read_char(values.dtype.kind, 0)
 
     # Get Series size
     size: cython.Py_ssize_t = values.shape[0]
@@ -1610,7 +1610,7 @@ def _serialize_dataframe(obj: DataFrame) -> str:
         # . access column (Series) values
         values: np.ndarray = col.values
         # . get column (Series) dtype
-        dtype: cython.Py_UCS4 = str_loc(values.dtype.kind, 0)
+        dtype: cython.Py_UCS4 = read_char(values.dtype.kind, 0)
         # . `<object>`
         if dtype == prefix.NDARRAY_DTYPE_OBJECT_ID:
             val = _serialize_dataframe_object(values, rows)
