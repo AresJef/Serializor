@@ -1,24 +1,31 @@
 # /usr/bin/python
 # -*- coding: UTF-8 -*-
-from serializor.transcode import dumps, loads, SerializorError
-from serializor.cipher import Cipher, CipherError, encrypt, decrypt
+from serializor.serialize import serialize
+from serializor.deserialize import deserialize
+from serializor.crypto import encrypt, decrypt
+from serializor.errors import (
+    SerializorError,
+    SerializeError,
+    SerializeTypeError,
+    DeserializeError,
+    DeserializeValueError,
+    CryptoError,
+    CryptoTypeError,
+)
 
 __all__ = [
-    "dumps",
-    "loads",
-    "SerializorError",
-    "Cipher",
+    # functions
+    "serialize",
+    "deserialize",
     "encrypt",
     "decrypt",
-    "CipherError",
+    # errors
+    "SerializorError",
+    "SerializeError",
+    "SerializeTypeError",
+    "DeserializeError",
+    "DeserializeValueError",
+    "CryptoError",
+    "CryptoTypeError",
 ]
-
-(
-    dumps,
-    loads,
-    SerializorError,
-    Cipher,
-    encrypt,
-    decrypt,
-    CipherError,
-)  # pyflakes
+(serialize, deserialize, encrypt, decrypt)  # pyflakes

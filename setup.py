@@ -28,13 +28,19 @@ def extension(filename: str, include_np: bool, *extra_compile_args: str) -> Exte
 # Build Extensions
 if platform.system() == "Windows":
     extensions = [
-        extension("cipher.py", False),
-        extension("transcode.py", True),
+        extension("crypto.py", True),
+        extension("deserialize.py", True),
+        extension("prefix.py", False),
+        extension("serialize.py", True),
+        extension("typeref.py", False),
     ]
 else:
     extensions = [
-        extension("cipher.py", False, "-Wno-unreachable-code"),
-        extension("transcode.py", True, "-Wno-unreachable-code"),
+        extension("crypto.py", True, "-Wno-unreachable-code"),
+        extension("deserialize.py", True, "-Wno-unreachable-code"),
+        extension("prefix.py", False, "-Wno-unreachable-code"),
+        extension("serialize.py", True, "-Wno-unreachable-code"),
+        extension("typeref.py", False, "-Wno-unreachable-code"),
     ]
 
 
