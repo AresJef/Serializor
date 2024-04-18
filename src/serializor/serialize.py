@@ -38,7 +38,8 @@ FN_ORJSON_DUMPS: Callable = dumps
 @cython.cfunc
 @cython.inline(True)
 def _orjson_dumps(obj: object) -> str:
-    """(cfunc) Serialize object using 'orjson (module)' into JSON `<'str'>`."""
+    """(cfunc) Serialize object using
+    'orjson <https://github.com/ijl/orjson>' into JSON `<'str'>`."""
     return bytes_decode_utf8(FN_ORJSON_DUMPS(obj))  # type: ignore
 
 

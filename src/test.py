@@ -423,11 +423,11 @@ if __name__ == "__main__":
         benchmark_sequence([bool(i) for i in obj], rounds, 2)  # `<bool>`
         benchmark_sequence([None] * 10, rounds, 2)  # `<NoneType>`
         obj = [datetime.datetime(1970, 1, 1, 1, 1, 1, 1)] * 10
-        benchmark_sequence(obj, rounds, 1, debug=False) # `<datetime.datetime>`
+        benchmark_sequence(obj, rounds, 1) # `<datetime.datetime>`
         obj = [datetime.datetime(1970, 1, 1, 1, 1, 1, 1, ZoneInfo("CET"))] * 10
         benchmark_sequence(obj, rounds, 1, debug=False) # `<datetime.datetime>` & tzinfo
-        benchmark_sequence([datetime.date(1970, 1, 1)] * 10, rounds, 1, debug=False) # `<datetime.date>`
-        benchmark_sequence([datetime.time(1, 1, 1, 1)] * 10, rounds, 1, debug=False) # `<datetime.time>`
+        benchmark_sequence([datetime.date(1970, 1, 1)] * 10, rounds, 1) # `<datetime.date>`
+        benchmark_sequence([datetime.time(1, 1, 1, 1)] * 10, rounds, 1) # `<datetime.time>`
         benchmark_sequence([datetime.timedelta(1, 2, 3)] * 10, rounds, 0) # `<datetime.timedelta>`
         benchmark_sequence([Decimal("3.1415926")] * 10, rounds, 0)  # `<decimal.Decimal>`
         benchmark_sequence([1 + 1j] * 10, rounds, 0)  # `<complex>`
@@ -435,7 +435,7 @@ if __name__ == "__main__":
         benchmark_sequence([bytearray(b"Hello")] * 10, rounds, 0) # `<bytearray>`
         benchmark_sequence([memoryview(b"Hello")] * 10, rounds, 0) # `<memoryview>`
         obj = [np.datetime64("1970-01-01 01:01:01.000001")] * 10
-        benchmark_sequence(obj, rounds, 1, debug=False) # `<np.datetime64>`
+        benchmark_sequence(obj, rounds, 1) # `<np.datetime64>`
         obj = [np.timedelta64(1024, "us")] * 10
         benchmark_sequence(obj, rounds, 0) # `<np.timedelta64>`
         # fmt: on
@@ -462,7 +462,7 @@ if __name__ == "__main__":
             bytearray(b"serializor's bytes"),
             memoryview(b"serializor's bytes"),
         ]
-        benchmark_sequence(obj, rounds, 0, debug=False)  # mixed
+        benchmark_sequence(obj, rounds, 0)  # mixed
         obj = [obj] * 10
         benchmark_sequence(obj, int(rounds / 10), 0, debug=False)  # nested
 
@@ -493,9 +493,9 @@ if __name__ == "__main__":
         benchmark_sequence(set(), rounds, 0)  # empty
         benchmark_sequence(frozenset(), rounds, 0)  # empty
         benchmark_sequence({}.keys(), rounds, 0, False)  # empty
-        benchmark_sequence(tuple(obj), rounds, 0, debug=False)  # `<tuple>`
-        benchmark_sequence(set(obj), rounds, 0, debug=False)  # `<set>`
-        benchmark_sequence(frozenset(obj), rounds, 0, debug=False)  # `<frozenset>`
+        benchmark_sequence(tuple(obj), rounds, 0)  # `<tuple>`
+        benchmark_sequence(set(obj), rounds, 0)  # `<set>`
+        benchmark_sequence(frozenset(obj), rounds, 0)  # `<frozenset>`
         benchmark_sequence(
             {i: v for i, v in enumerate(obj)}.values(), rounds, 0, False, False
         )  # `<dick_values>`
@@ -516,11 +516,11 @@ if __name__ == "__main__":
         benchmark_dict({k: bool(v) for k, v in obj.items()}, rounds, 2)  # `<bool>`
         benchmark_dict({k: None for k, v in obj.items()}, rounds, 2)  # `<NoneType>`
         obj = {k: datetime.datetime(1970, 1, 1, 1, 1, 1, 1) for k in obj}
-        benchmark_dict(obj, rounds, 1, debug=False)  # `<datetime.datetime>`
+        benchmark_dict(obj, rounds, 1)  # `<datetime.datetime>`
         obj = {k: datetime.datetime(1970, 1, 1, 1, 1, 1, 1, ZoneInfo("CET")) for k in obj}
         benchmark_dict(obj, rounds, 1, debug=False)  # `<datetime.datetime>` & tzinfo
-        benchmark_dict({k: datetime.date(1970, 1, 1) for k in obj}, rounds, 1, debug=False)  # `<datetime.date>`
-        benchmark_dict({k: datetime.time(1, 1, 1, 1) for k in obj}, rounds, 1, debug=False)  # `<datetime.time>`
+        benchmark_dict({k: datetime.date(1970, 1, 1) for k in obj}, rounds, 1)  # `<datetime.date>`
+        benchmark_dict({k: datetime.time(1, 1, 1, 1) for k in obj}, rounds, 1)  # `<datetime.time>`
         benchmark_dict({k: datetime.timedelta(1, 2, 3) for k in obj}, rounds, 0)  # `<datetime.timedelta>`
         benchmark_dict({k: Decimal("3.1415926") for k in obj}, rounds, 0)  # `<datetime.Decimal>`
         benchmark_dict({k: 1 + 1j for k in obj}, rounds, 0)  # `<complex>`
@@ -528,7 +528,7 @@ if __name__ == "__main__":
         benchmark_dict({k: bytearray(b"Hello") for k in obj}, rounds, 0)  # `<bytearray>`
         benchmark_dict({k: memoryview(b"Hello") for k in obj}, rounds, 0)  # `<memoryview>`
         obj = {k: np.datetime64("1970-01-01 01:01:01.000001") for k in obj}
-        benchmark_dict(obj, rounds, 1, debug=False)  # `<np.datetime64>`
+        benchmark_dict(obj, rounds, 1)  # `<np.datetime64>`
         obj = {k: np.timedelta64(1024, "us") for k in obj}
         benchmark_dict(obj, rounds, 0)  # `<np.timedelta64>`
         # fmt: on

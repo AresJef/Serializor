@@ -40,7 +40,8 @@ FN_NUMPY_EMPTY: Callable = np.empty
 @cython.cfunc
 @cython.inline(True)
 def _orjson_loads(data: str) -> object:
-    """(cfunc) Deserialize JSON token using 'orjson (module)' to Python `<'object'>`."""
+    """(cfunc) Deserialize JSON string using
+    'orjson <https://github.com/ijl/orjson>' to Python `<'object'>`."""
     return FN_ORJSON_LOADS(data)
 
 
