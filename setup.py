@@ -30,7 +30,7 @@ if platform.system() == "Windows":
     extensions = [
         extension("crypto.py", True),
         extension("deserialize.py", True),
-        extension("prefix.py", False),
+        extension("prefix.py", True),
         extension("serialize.py", True),
         extension("typeref.py", False),
     ]
@@ -38,7 +38,7 @@ else:
     extensions = [
         extension("crypto.py", True, "-Wno-unreachable-code"),
         extension("deserialize.py", True, "-Wno-unreachable-code"),
-        extension("prefix.py", False, "-Wno-unreachable-code"),
+        extension("prefix.py", True, "-Wno-unreachable-code"),
         extension("serialize.py", True, "-Wno-unreachable-code"),
         extension("typeref.py", False, "-Wno-unreachable-code"),
     ]

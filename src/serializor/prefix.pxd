@@ -1,5 +1,7 @@
 # cython: language_level=3
 
+cimport numpy as np
+
 # Basic Types
 cdef:
     str STR, BOOL, FLOAT, INT, BYTES, NONE
@@ -55,6 +57,7 @@ cdef:
 
 # Numpy.ndarray
 cdef:
+    np.ndarray arr
     str NDARRAY
     str NDARRAY_DTYPE_OBJECT, NDARRAY_DTYPE_FLOAT
     str NDARRAY_DTYPE_INT, NDARRAY_DTYPE_UINT, NDARRAY_DTYPE_BOOL

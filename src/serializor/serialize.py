@@ -671,9 +671,6 @@ def _serialize_ndarray(obj: np.ndarray) -> str:
          to the serialization process of a list. For more detail, please
          refer to the `_serialize_ndarray_object()` function.
     """
-    # Get ndarray dtype
-    dtype: cython.Py_UCS4 = read_char(obj.dtype.kind, 0)
-
     # Get ndarray dimensions
     ndim: cython.Py_ssize_t = obj.ndim
     if ndim == 0:
@@ -685,14 +682,17 @@ def _serialize_ndarray(obj: np.ndarray) -> str:
             "<Serializor> Can't not serialize `<ndarray>` with more than 4 dimensions."
         )
 
+    # Get ndarray dtype
+    dtype: cython.Py_UCS4 = obj.descr.kind
+
     # Serialize ndarray
     # . ndarray[object]
     if dtype == prefix.NDARRAY_DTYPE_OBJECT_ID:
         return _serialize_ndarray_object(obj, ndim)
     # . ndarray[float]
     if dtype == prefix.NDARRAY_DTYPE_FLOAT_ID:
-        if np.PyArray_TYPE(obj) == np.NPY_FLOAT16:
-            obj = np.PyArray_Cast(obj, np.NPY_FLOAT32)
+        if np.PyArray_TYPE(obj) == np.NPY_TYPES.NPY_FLOAT16:
+            obj = np.PyArray_Cast(obj, np.NPY_TYPES.NPY_FLOAT32)
         return _serialize_ndarray_common(obj, ndim, prefix.NDARRAY_FLOAT)
     # . ndarray[int]
     if dtype == prefix.NDARRAY_DTYPE_INT_ID:
@@ -924,13 +924,14 @@ def _serialize_ndarray_dt64td64(
     # 1-dimensional
     if ndim == 1:
         s_i, s_j, s_k, s_l = shape[0], 0, 0, 0
-        # . get dtype & time unit
-        try:
-            dtype = _match_ndarray_dt64td64_dtype(np.get_datetime64_unit(obj[0]), dt64)
-        except IndexError:
+        # . empty ndarray
+        if s_i == 0:  # 'Mmns1|0[]'
             dtype = _parse_ndarray_dt64td64_dtype(obj.dtype.str, dt64)
+            return "%s%s1|0[]" % (prefix.NDARRAY, dtype)
         # . cast into int64
+        dtype = _match_ndarray_dt64td64_dtype(np.get_datetime64_unit(obj[0]), dt64)
         obj = np.PyArray_Cast(obj, np.NPY_TYPES.NPY_INT64)
+        # . serialization
         items = [ndarray_getitem_1d(obj, i) for i in range(s_i)]  # type: ignore
         # fmt: off
         return "%s%s1|%d%s" % (  # 'Nmns1|3[...]'
@@ -940,15 +941,14 @@ def _serialize_ndarray_dt64td64(
     # 2-dimensional
     elif ndim == 2:
         s_i, s_j, s_k, s_l = shape[0], shape[1], 0, 0
-        # . get dtype & time unit
-        try:
-            dtype = _match_ndarray_dt64td64_dtype(
-                np.get_datetime64_unit(obj[0, 0]), dt64
-            )
-        except IndexError:
+        # . empty ndarray
+        if s_j == 0:  # 'Mmns2|2|0[]'
             dtype = _parse_ndarray_dt64td64_dtype(obj.dtype.str, dt64)
+            return "%s%s2|%d|0[]" % (prefix.NDARRAY, dtype, s_i)
         # . cast into int64
+        dtype = _match_ndarray_dt64td64_dtype(np.get_datetime64_unit(obj[0, 0]), dt64)
         obj = np.PyArray_Cast(obj, np.NPY_TYPES.NPY_INT64)
+        # . serialization
         items = [
             ndarray_getitem_2d(obj, i, j)  # type: ignore
             for i in range(s_i)
@@ -962,15 +962,16 @@ def _serialize_ndarray_dt64td64(
     # 3-dimensional
     elif ndim == 3:
         s_i, s_j, s_k, s_l = shape[0], shape[1], shape[2], 0
-        # . get dtype & time unit
-        try:
-            dtype = _match_ndarray_dt64td64_dtype(
-                np.get_datetime64_unit(obj[0, 0, 0]), dt64
-            )
-        except IndexError:
+        # . empty ndarray
+        if s_k == 0:  # 'Mmns3|2|2|0[]'
             dtype = _parse_ndarray_dt64td64_dtype(obj.dtype.str, dt64)
+            return "%s%s3|%d|%d|0[]" % (prefix.NDARRAY, dtype, s_i, s_j)
         # . cast into int64
+        dtype = _match_ndarray_dt64td64_dtype(
+            np.get_datetime64_unit(obj[0, 0, 0]), dt64
+        )
         obj = np.PyArray_Cast(obj, np.NPY_TYPES.NPY_INT64)
+        # . serialization
         items = [
             ndarray_getitem_3d(obj, i, j, k)  # type: ignore
             for i in range(s_i)
@@ -985,15 +986,16 @@ def _serialize_ndarray_dt64td64(
     # 4-dimensional
     else:
         s_i, s_j, s_k, s_l = shape[0], shape[1], shape[2], shape[3]
-        # . get dtype & time unit
-        try:
-            dtype = _match_ndarray_dt64td64_dtype(
-                np.get_datetime64_unit(obj[0, 0, 0, 0]), dt64
-            )
-        except IndexError:
+        # . empty ndarray
+        if s_l == 0:  # 'Mmns4|2|2|2|0[]'
             dtype = _parse_ndarray_dt64td64_dtype(obj.dtype.str, dt64)
+            return "%s%s4|%d|%d|%d|0[]" % (prefix.NDARRAY, dtype, s_i, s_j, s_k)
         # . cast into int64
+        dtype = _match_ndarray_dt64td64_dtype(
+            np.get_datetime64_unit(obj[0, 0, 0, 0]), dt64
+        )
         obj = np.PyArray_Cast(obj, np.NPY_TYPES.NPY_INT64)
+        # . serialization
         items = [
             ndarray_getitem_4d(obj, i, j, k, l)  # type: ignore
             for i in range(s_i)
@@ -1347,7 +1349,7 @@ def _serialize_series(obj: Series) -> str:
     values: np.ndarray = obj.values
 
     # Get Series dtype
-    dtype: cython.Py_UCS4 = read_char(values.dtype.kind, 0)
+    dtype: cython.Py_UCS4 = values.descr.kind
 
     # Get Series size
     size: cython.Py_ssize_t = values.shape[0]
@@ -1358,8 +1360,8 @@ def _serialize_series(obj: Series) -> str:
         return _serialize_series_object(values, size)
     # . Series[float]
     if dtype == prefix.NDARRAY_DTYPE_FLOAT_ID:
-        if np.PyArray_TYPE(values) == np.NPY_FLOAT16:
-            values = np.PyArray_Cast(values, np.NPY_FLOAT32)
+        if np.PyArray_TYPE(values) == np.NPY_TYPES.NPY_FLOAT16:
+            values = np.PyArray_Cast(values, np.NPY_TYPES.NPY_FLOAT32)
         return _serialize_series_common(values, size, prefix.SERIES_FLOAT)
     # . Series[int]
     if dtype == prefix.NDARRAY_DTYPE_INT_ID:
@@ -1473,12 +1475,12 @@ def _serialize_series_dt64td64(
       converted to UTC time after serialization and the timezone
       information will be `LOST`.
     """
-    # Get dtype & time unit
-    try:
-        dtype = _match_ndarray_dt64td64_dtype(np.get_datetime64_unit(values[0]), dt64)
-    except IndexError:
+    # Empty Series
+    if size == 0:
         dtype = _parse_ndarray_dt64td64_dtype(values.dtype.str, dt64)
+        return "%s%s0[]" % (prefix.SERIES, dtype)
     # Cast into int64
+    dtype = _match_ndarray_dt64td64_dtype(np.get_datetime64_unit(values[0]), dt64)
     values = np.PyArray_Cast(values, np.NPY_TYPES.NPY_INT64)
     # Serialization
     items = [ndarray_getitem_1d(values, i) for i in range(size)]  # type: ignore
@@ -1610,14 +1612,14 @@ def _serialize_dataframe(obj: DataFrame) -> str:
         # . access column (Series) values
         values: np.ndarray = col.values
         # . get column (Series) dtype
-        dtype: cython.Py_UCS4 = read_char(values.dtype.kind, 0)
+        dtype: cython.Py_UCS4 = values.descr.kind
         # . `<object>`
         if dtype == prefix.NDARRAY_DTYPE_OBJECT_ID:
             val = _serialize_dataframe_object(values, rows)
         # . `<float>`
         elif dtype == prefix.NDARRAY_DTYPE_FLOAT_ID:
-            if np.PyArray_TYPE(values) == np.NPY_FLOAT16:
-                values = np.PyArray_Cast(values, np.NPY_FLOAT32)
+            if np.PyArray_TYPE(values) == np.NPY_TYPES.NPY_FLOAT16:
+                values = np.PyArray_Cast(values, np.NPY_TYPES.NPY_FLOAT32)
             val = _serialize_dataframe_common(values, rows, prefix.DATAFRAME_COL_FLOAT)
         # . `<int>`
         elif dtype == prefix.NDARRAY_DTYPE_INT_ID:
@@ -1700,9 +1702,8 @@ def _serialize_dataframe_dt64td64(
     This function is specifically for DataFrame columns with
     dtype of: "M" (datetime64) and "m" (timedelta64).
     """
-    # Get dtype & time unit
-    dtype = _match_ndarray_dt64td64_dtype(np.get_datetime64_unit(values[0]), dt64)
     # Cast into int64
+    dtype = _match_ndarray_dt64td64_dtype(np.get_datetime64_unit(values[0]), dt64)
     values = np.PyArray_Cast(values, np.NPY_TYPES.NPY_INT64)
     # Serialization
     items = [ndarray_getitem_1d(values, i) for i in range(rows)]  # type: ignore

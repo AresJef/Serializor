@@ -4,7 +4,11 @@
 
 # Cython imports
 import cython
+from cython.cimports import numpy as np  # type: ignore
 from cython.cimports.cpython.unicode import PyUnicode_READ_CHAR as read_char  # type: ignore
+from cython.cimports.cpython.unicode import PyUnicode_FromOrdinal as str_fr_ucs4  # type: ignore
+
+np.import_array()
 
 # Python imports
 import numpy as np
@@ -100,16 +104,28 @@ TIMEDELTA64_AS: str = TIMEDELTA64 + "as"  # 'mas'
 
 # Numpy.ndarray ---------------------------------------------------------------------
 NDARRAY: str = "N"
-NDARRAY_DTYPE_OBJECT: str = np.array(None, dtype=object).dtype.kind  # 'O'
-NDARRAY_DTYPE_FLOAT: str = np.array(1.1, dtype=np.float64).dtype.kind  # 'f'
-NDARRAY_DTYPE_INT: str = np.array(1, dtype=np.int64).dtype.kind  # 'i'
-NDARRAY_DTYPE_UINT: str = np.array(1, dtype=np.uint64).dtype.kind  # 'u'
-NDARRAY_DTYPE_BOOL: str = np.array(1, dtype=np.bool_).dtype.kind  # 'b'
-NDARRAY_DTYPE_DT64: str = np.array(1, dtype="datetime64[ns]").dtype.kind  # 'M'
-NDARRAY_DTYPE_TD64: str = np.array(1, dtype="timedelta64[ns]").dtype.kind  # 'm'
-NDARRAY_DTYPE_COMPLEX: str = np.array(1 + 1j, dtype=np.complex128).dtype.kind  # 'c'
-NDARRAY_DTYPE_BYTES: str = np.array(b"", dtype="S").dtype.kind  # 'S'
-NDARRAY_DTYPE_UNICODE: str = np.array("", dtype="U").dtype.kind  # 'U'
+# fmt: off
+arr: np.ndarray = np.array(None, dtype=object)
+NDARRAY_DTYPE_OBJECT: str = str_fr_ucs4(arr.descr.kind)  # 'O'
+arr: np.ndarray = np.array(1.1, dtype=np.float64)
+NDARRAY_DTYPE_FLOAT: str = str_fr_ucs4(arr.descr.kind)  # 'f'
+arr: np.ndarray = np.array(1, dtype=np.int64)
+NDARRAY_DTYPE_INT: str = str_fr_ucs4(arr.descr.kind)  # 'i'
+arr: np.ndarray = np.array(1, dtype=np.uint64)
+NDARRAY_DTYPE_UINT: str = str_fr_ucs4(arr.descr.kind)  # 'u'
+arr: np.ndarray = np.array(1, dtype=np.bool_)
+NDARRAY_DTYPE_BOOL: str = str_fr_ucs4(arr.descr.kind)  # 'b'
+arr: np.ndarray = np.array(1, dtype="datetime64[ns]")
+NDARRAY_DTYPE_DT64: str = str_fr_ucs4(arr.descr.kind)  # 'M'
+arr: np.ndarray = np.array(1, dtype="timedelta64[ns]")
+NDARRAY_DTYPE_TD64: str = str_fr_ucs4(arr.descr.kind)  # 'm'
+arr: np.ndarray = np.array(1 + 1j, dtype=np.complex128)
+NDARRAY_DTYPE_COMPLEX: str = str_fr_ucs4(arr.descr.kind)  # 'c'
+arr: np.ndarray = np.array(b"", dtype="S")
+NDARRAY_DTYPE_BYTES: str = str_fr_ucs4(arr.descr.kind)  # 'S'
+arr: np.ndarray = np.array("", dtype="U")
+NDARRAY_DTYPE_UNICODE: str = str_fr_ucs4(arr.descr.kind)  # 'U'
+# fmt: on
 # . identifier
 NDARRAY_ID: cython.Py_UCS4 = read_char(NDARRAY, 0)
 NDARRAY_DTYPE_OBJECT_ID: cython.Py_UCS4 = read_char(NDARRAY_DTYPE_OBJECT, 0)
