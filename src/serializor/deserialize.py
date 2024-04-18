@@ -40,7 +40,7 @@ FN_NUMPY_EMPTY: Callable = np.empty
 @cython.cfunc
 @cython.inline(True)
 def _orjson_loads(data: str) -> object:
-    """(cfunc) Deserialize JSON token using 'orjson' to Python `<object>`."""
+    """(cfunc) Deserialize JSON token using 'orjson (module)' to Python `<'object'>`."""
     return FN_ORJSON_LOADS(data)
 
 
@@ -48,10 +48,10 @@ def _orjson_loads(data: str) -> object:
 @cython.cfunc
 @cython.inline(True)
 def _deserialize_str(data: str, pos: cython.Py_ssize_t[2]) -> object:
-    """(cfunc) Deserialize the JSON token of the 'data' to `<str>`.
+    """(cfunc) Deserialize the JSON token of the 'data' to `<'str'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the data position.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the data position.
         - pos[0]: The start position of the token.
         - pos[1]: The end (total length) of the data.
 
@@ -79,11 +79,11 @@ def _deserialize_float(
     idx: cython.Py_ssize_t,
     loc: cython.Py_ssize_t,
 ) -> object:
-    """(cfunc) Deserialize the float token of the 'data' to `<float>`.
+    """(cfunc) Deserialize the float token of the 'data' to `<'float'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param idx `<Py_ssize_t>`: The start position of the token.
-    :param loc `<Py_ssize_t>`: The ended position of the token.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param idx `<'Py_ssize_t'>`: The start position of the token.
+    :param loc `<'Py_ssize_t'>`: The ended position of the token.
 
     ### Example:
     >>> data = '...f3.14...'
@@ -101,11 +101,11 @@ def _deserialize_int(
     idx: cython.Py_ssize_t,
     loc: cython.Py_ssize_t,
 ) -> object:
-    """(cfunc) Deserialize the integer token of the 'data' to `<int>`.
+    """(cfunc) Deserialize the integer token of the 'data' to `<'int'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param idx `<Py_ssize_t>`: The start position of the token.
-    :param loc `<Py_ssize_t>`: The ended position of the token.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param idx `<'Py_ssize_t'>`: The start position of the token.
+    :param loc `<'Py_ssize_t'>`: The ended position of the token.
 
     ### Example:
     >>> data = '...i1024...'
@@ -119,11 +119,11 @@ def _deserialize_int(
 @cython.cfunc
 @cython.inline(True)
 def _deserialize_bool(data: str, idx: cython.Py_ssize_t) -> object:
-    """(cfunc) Deserialize the boolean token of the 'data' to `<bool>`.
+    """(cfunc) Deserialize the boolean token of the 'data' to `<'bool'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param idx `<Py_ssize_t>`: The start position of the token.
-    :param loc `<Py_ssize_t>`: The ended position of the token.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param idx `<'Py_ssize_t'>`: The start position of the token.
+    :param loc `<'Py_ssize_t'>`: The ended position of the token.
 
     ### Example:
     >>> data = '...o1...'
@@ -142,11 +142,11 @@ def _deserialize_datetime(
     idx: cython.Py_ssize_t,
     loc: cython.Py_ssize_t,
 ) -> object:
-    """(cfunc) Deserialize the datetime token of the 'data' to `<datetime.datetime>`.
+    """(cfunc) Deserialize the datetime token of the 'data' to `<'datetime.datetime'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param idx `<Py_ssize_t>`: The start position of the token.
-    :param loc `<Py_ssize_t>`: The ended position of the token.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param idx `<'Py_ssize_t'>`: The start position of the token.
+    :param loc `<'Py_ssize_t'>`: The ended position of the token.
 
     ### Example:
     >>> data = '...z2021-01-01T00:00:00...'
@@ -164,11 +164,11 @@ def _deserialize_date(
     idx: cython.Py_ssize_t,
     loc: cython.Py_ssize_t,
 ) -> object:
-    """(cfunc) Deserialize the date section of the 'data' to `<datetime.date>`.
+    """(cfunc) Deserialize the date section of the 'data' to `<'datetime.date'>`.
 
-    :param data `<str>`: The serialized string that contains the date.
-    :param idx `<Py_ssize_t>`: The start position of the token.
-    :param loc `<Py_ssize_t>`: The ended position of the token.
+    :param data `<'str'>`: The serialized string that contains the date.
+    :param idx `<'Py_ssize_t'>`: The start position of the token.
+    :param loc `<'Py_ssize_t'>`: The ended position of the token.
 
     ### Example:
     >>> data = '...d2021-01-01...'
@@ -186,11 +186,11 @@ def _deserialize_time(
     idx: cython.Py_ssize_t,
     loc: cython.Py_ssize_t,
 ) -> object:
-    """(cfunc) Deserialize the time token of the 'data' to `<datetime.time>`.
+    """(cfunc) Deserialize the time token of the 'data' to `<'datetime.time'>`.
 
-    :param data `<str>`: The serialized string that contains the date.
-    :param idx `<Py_ssize_t>`: The start position of the token.
-    :param loc `<Py_ssize_t>`: The ended position of the token.
+    :param data `<'str'>`: The serialized string that contains the date.
+    :param idx `<'Py_ssize_t'>`: The start position of the token.
+    :param loc `<'Py_ssize_t'>`: The ended position of the token.
 
     ### Example:
     >>> data = '...t00:00:00.000001...'
@@ -208,11 +208,11 @@ def _deserialize_timedelta(
     idx: cython.Py_ssize_t,
     loc: cython.Py_ssize_t,
 ) -> object:
-    """(cfunc) Deserialize the timedelta token of the 'data' to `<datetime.timedelta>`.
+    """(cfunc) Deserialize the timedelta token of the 'data' to `<'datetime.timedelta'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param idx `<Py_ssize_t>`: The start position of the token.
-    :param loc `<Py_ssize_t>`: The ended position of the token.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param idx `<'Py_ssize_t'>`: The start position of the token.
+    :param loc `<'Py_ssize_t'>`: The ended position of the token.
 
     ### Example:
     >>> data = '...l1|2|3...'
@@ -242,11 +242,11 @@ def _deserialize_decimal(
     idx: cython.Py_ssize_t,
     loc: cython.Py_ssize_t,
 ) -> object:
-    """(cfunc) Deserialize the decimal token of the 'data' to `<decimal>`.
+    """(cfunc) Deserialize the decimal token of the 'data' to `<'decimal.Decimal'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param idx `<Py_ssize_t>`: The start position of the token.
-    :param loc `<Py_ssize_t>`: The ended position of the token.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param idx `<'Py_ssize_t'>`: The start position of the token.
+    :param loc `<'Py_ssize_t'>`: The ended position of the token.
 
     ### Example:
     >>> data = '...e3.14...'
@@ -264,11 +264,11 @@ def _deserialize_complex(
     idx: cython.Py_ssize_t,
     loc: cython.Py_ssize_t,
 ) -> object:
-    """(cfunc) Deserialize the complex token of the 'data' to `<complex>`.
+    """(cfunc) Deserialize the complex token of the 'data' to `<'complex'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param idx `<Py_ssize_t>`: The start position of the token.
-    :param loc `<Py_ssize_t>`: The ended position of the token.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param idx `<'Py_ssize_t'>`: The start position of the token.
+    :param loc `<'Py_ssize_t'>`: The ended position of the token.
 
     ### Example:
     >>> data = '...c1.0|1.0...'
@@ -287,10 +287,10 @@ def _deserialize_complex(
 @cython.cfunc
 @cython.inline(True)
 def _deserialize_bytes(data: str, pos: cython.Py_ssize_t[2]) -> object:
-    """(cfunc) Deserialize the bytes token of the 'data' to `<bytes>`.
+    """(cfunc) Deserialize the bytes token of the 'data' to `<'bytes'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the data position.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the data position.
         - pos[0]: The start position of the token.
         - pos[1]: The end (total length) of the data.
 
@@ -319,17 +319,17 @@ def _deserialize_datetime64(
     idx: cython.Py_ssize_t,
     loc: cython.Py_ssize_t,
 ) -> object:
-    """(cfunc) Deserialize the datetime64 token of the 'data' to `<np.datetime64>`.
+    """(cfunc) Deserialize the datetime64 token of the 'data' to `<'numpy.datetime64'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param idx `<Py_ssize_t>`: The start position of the token.
-    :param loc `<Py_ssize_t>`: The ended position of the token.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param idx `<'Py_ssize_t'>`: The start position of the token.
+    :param loc `<'Py_ssize_t'>`: The ended position of the token.
 
     ### Example:
     >>> data = '...Mus3661000001...'
         # Start idx: ...{M}us3661000001...
         # Ended loc: ...Mus366100000{1}...
-        return np.datetime64(3661000001, 'us')
+        return numpy.datetime64(3661000001, 'us')
     """
     # If the 3rd character is ASCII digit [0-9]
     # unit is the 2nd character: M{s}1024.
@@ -352,17 +352,17 @@ def _deserialize_timedelta64(
     idx: cython.Py_ssize_t,
     loc: cython.Py_ssize_t,
 ) -> object:
-    """(cfunc) Deserialize the timedelta64 token of the 'data' to `<np.timedelta64>`.
+    """(cfunc) Deserialize the timedelta64 token of the 'data' to `<'numpy.timedelta64'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param idx `<Py_ssize_t>`: The start position of the token.
-    :param loc `<Py_ssize_t>`: The ended position of the token.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param idx `<'Py_ssize_t'>`: The start position of the token.
+    :param loc `<'Py_ssize_t'>`: The ended position of the token.
 
     ### Example:
     >>> data = '...mus1024...'
         # Start idx: ...{m}us1024...
         # Ended loc: ...mus102{4}...
-        return np.timedelta64(1024, 'us')
+        return numpy.timedelta64(1024, 'us')
     """
     # If the 3rd character is ASCII digit [0-9]
     # unit is the 2nd character: m{s}1024.
@@ -382,10 +382,10 @@ def _deserialize_timedelta64(
 @cython.cfunc
 @cython.inline(True)
 def _deserialize_dict(data: str, pos: cython.Py_ssize_t[2]) -> object:
-    """(cfunc) Deserialize the dictionary token of the 'data' to `<dict>`.
+    """(cfunc) Deserialize the dictionary token of the 'data' to `<'dict'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the data position.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the data position.
         - pos[0]: The start position of the token.
         - pos[1]: The end (total length) of the data.
 
@@ -420,10 +420,10 @@ def _deserialize_dict(data: str, pos: cython.Py_ssize_t[2]) -> object:
 @cython.cfunc
 @cython.inline(True)
 def _deserialize_list(data: str, pos: cython.Py_ssize_t[2]) -> object:
-    """(cfunc) Deserialize the list token of the 'data' to `<list>`.
+    """(cfunc) Deserialize the list token of the 'data' to `<'list'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the data position.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the data position.
         - pos[0]: The start position of the token.
         - pos[1]: The end (total length) of the data.
 
@@ -449,10 +449,10 @@ def _deserialize_list(data: str, pos: cython.Py_ssize_t[2]) -> object:
 @cython.cfunc
 @cython.inline(True)
 def _deserialize_tuple(data: str, pos: cython.Py_ssize_t[2]) -> object:
-    """(cfunc) Deserialize the tuple token of the 'data' to `<tuple>`.
+    """(cfunc) Deserialize the tuple token of the 'data' to `<'tuple'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the data position.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the data position.
         - pos[0]: The start position of the token.
         - pos[1]: The end (total length) of the data.
 
@@ -467,10 +467,10 @@ def _deserialize_tuple(data: str, pos: cython.Py_ssize_t[2]) -> object:
 @cython.cfunc
 @cython.inline(True)
 def _deserialize_set(data: str, pos: cython.Py_ssize_t[2]) -> object:
-    """(cfunc) Deserialize the set token of the 'data' to `<set>`.
+    """(cfunc) Deserialize the set token of the 'data' to `<'set'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the data position.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the data position.
         - pos[0]: The start position of the token.
         - pos[1]: The end (total length) of the data.
 
@@ -501,19 +501,18 @@ def _deserialize_ndarray(
     pos: cython.Py_ssize_t[2],
     item: cython.bint,
 ) -> object:
-    """(cfunc) Deserialize the numpy.ndarray token
-    of the 'data' to `<ndarray>`.
+    """(cfunc) Deserialize the numpy.ndarray token of the 'data' to `<'numpy.ndarray'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the data position.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the data position.
         - pos[0]: The start position of the token.
         - pos[1]: The end (total length) of the data.
-    :param item `<bool>`: Whether the deserialization is for an item of the object.
+    :param item `<'bool'>`: Whether the deserialization is for an item of the object.
 
     ### Example:
     >>> data = '...Ni1|5[0,1,2,3,4]...'
         # Start position: ...{N}i1|5[0,1,2,3,4]...
-        return np.array([0, 1, 2, 3, 4], dtype=np.int64)
+        return numpy.array([0, 1, 2, 3, 4], dtype=np.int64)
     """
     # Get ndarray dtype: N{i}1|5[0,1,2,3,4]
     dtype: cython.Py_UCS4 = read_char(data, pos[0] + 1)  # type: ignore
@@ -557,8 +556,8 @@ def _deserialize_ndarray(
     # . unrecognized dtype
     else:
         raise errors.DeserializeValueError(
-            "<Serializor> Invalid deserialize 'data': "
-            "unsupported `<ndarray>` dtype '%s'." % str_fr_ucs4(dtype)
+            "<Serializor> Failed to deserialize 'data': "
+            "unsupported <'numpy.ndarray'> dtype '%s'." % str_fr_ucs4(dtype)
         )
 
     # Return ndarray
@@ -574,26 +573,26 @@ def _deserialize_ndarray_common(
     dtype: cython.int,
 ) -> object:
     """(cfunc) Deserialize numpy.ndarray token
-    of the 'data' to `<ndarray[str/float/int/uint/bool]>`.
+    of the 'data' to `<'ndarray[str/float/int/uint/bool]'>`.
 
     This function is specifically for ndarray with dtype of:
     "U" (str), "f" (float), "i" (int), "u" (uint) and "b" (bool).
 
     ### Example:
     >>> data = '...NU1|3["1","2","3"]...'
-        return np.array(["1", "2", "3"], dtype="U")
+        return numpy.array(["1", "2", "3"], dtype="U")
 
     >>> data = '...Nf1|3[1.1,2.2,3.3]...'
-        return np.array([1.1, 2.2, 3.3], dtype=np.float64)
+        return numpy.array([1.1, 2.2, 3.3], dtype=np.float64)
 
     >>> data = '...Ni1|3[1,2,3]...'
-        return np.array([1, 2, 3], dtype=np.int64)
+        return numpy.array([1, 2, 3], dtype=np.int64)
 
     >>> data = '...Nu1|3[1,2,3]...'
-        return np.array([1, 2, 3], dtype=np.uint64)
+        return numpy.array([1, 2, 3], dtype=np.uint64)
 
     >>> data = '...Nb1|3[1,0,1]...'
-        return np.array([True, False, True], dtype=np.bool_)
+        return numpy.array([True, False, True], dtype=np.bool_)
     """
     # Parse ndarray shape
     eof: cython.Py_ssize_t = pos[1]
@@ -699,8 +698,8 @@ def _deserialize_ndarray_common(
 
     # Invalid dimension
     raise errors.DeserializeValueError(
-        "<Serializor> Invalid deserialize 'data': "
-        "unsupported `<ndarray>` dimension [%d]." % ndim
+        "<Serializor> Failed to deserialize 'data': "
+        "unsupported <'numpy.ndarray'> dimension [%d]." % ndim
     )
 
 
@@ -713,17 +712,17 @@ def _deserialize_ndarray_dt64td64(
     dt64: cython.bint,
 ) -> object:
     """(cfunc) Deserialize numpy.ndarray token
-    of the 'data' to `<ndarray[datetime64/timedelta64]>`.
+    of the 'data' to `<'ndarray[datetime64/timedelta64]'>`.
 
     This function is specifically for ndarray with
     dtype of: "M" (datetime64) and "m" (timedelta64).
 
     ### Example:
     >>> data = '...NMs1|3[1672531200,1672617600,1672704000]...'
-        return np.array(["2023-01-01", "2023-01-02", "2023-01-03"], dtype="datetime64[s]")
+        return numpy.array(["2023-01-01", "2023-01-02", "2023-01-03"], dtype="datetime64[s]")
 
     >>> data = '...Nms1|3[1,2,3]...'
-        return np.array([1, 2, 3], dtype="timedelta64[s]")
+        return numpy.array([1, 2, 3], dtype="timedelta64[s]")
     """
     # If the 4th character is ASCII digit [0-9]
     # unit is the 3rd character: NM[s]1
@@ -829,8 +828,8 @@ def _deserialize_ndarray_dt64td64(
 
     # Invalid dimension
     raise errors.DeserializeValueError(
-        "<Serializor> Invalid deserialize 'data': "
-        "unsupported `<ndarray>` dimension [%d]." % ndim
+        "<Serializor> Failed to deserialize 'data': "
+        "unsupported <'numpy.ndarray'> dimension [%d]." % ndim
     )
 
 
@@ -842,14 +841,14 @@ def _deserialize_ndarray_complex(
     item: cython.bint,
 ) -> object:
     """(cfunc) Deserialize numpy.ndarray token
-    of the 'data' to `<ndarray[complex]>`.
+    of the 'data' to `<'ndarray[complex]'>`.
 
     This function is specifically for ndarray
     with dtype of: "c" (complex).
 
     ### Example:
     >>> data = '...Nc1|3[1.0,1.0,2.0,2.0,3.0,3.0]...'
-        return np.array([1 + 1j, 2 + 2j, 3 + 3j], dtype=np.complex128)
+        return numpy.array([1 + 1j, 2 + 2j, 3 + 3j], dtype=np.complex128)
     """
     # Parse ndarray shape
     eof: cython.Py_ssize_t = pos[1]
@@ -953,8 +952,8 @@ def _deserialize_ndarray_complex(
 
     # Invalid dimension
     raise errors.DeserializeValueError(
-        "<Serializor> Invalid deserialize 'data': "
-        "unsupported `<ndarray>` dimension [%d]." % ndim
+        "<Serializor> Failed to deserialize 'data': "
+        "unsupported <'numpy.ndarray'> dimension [%d]." % ndim
     )
 
 
@@ -966,14 +965,14 @@ def _deserialize_ndarray_bytes(
     item: cython.bint,
 ) -> object:
     """(cfunc) Deserialize numpy.ndarray token
-    of the 'data' to `<ndarray[bytes]>`.
+    of the 'data' to `<'ndarray[bytes]'>`.
 
     This function is specifically for ndarray
     with dtype of: "S" (bytes string).
 
     ### Example:
     >>> data = '...NS1|3["1","2","3"]...'
-        return np.array([b"1", b"2", b"3"], dtype="S")
+        return numpy.array([b"1", b"2", b"3"], dtype="S")
     """
     # Parse ndarray shape
     eof: cython.Py_ssize_t = pos[1]
@@ -1079,8 +1078,8 @@ def _deserialize_ndarray_bytes(
 
     # Invalid dimension
     raise errors.DeserializeValueError(
-        "<Serializor> Invalid deserialize 'data': "
-        "unsupported `<ndarray>` dimension [%d]." % ndim
+        "<Serializor> Failed to deserialize 'data': "
+        "unsupported <'numpy.ndarray'> dimension [%d]." % ndim
     )
 
 
@@ -1088,14 +1087,14 @@ def _deserialize_ndarray_bytes(
 @cython.inline(True)
 def _deserialize_ndarray_object(data: str, pos: cython.Py_ssize_t[2]) -> object:
     """(cfunc) Deserialize numpy.ndarray token
-    of the 'data' to `<ndarray[object]>`.
+    of the 'data' to `<'ndarray[object]'>`.
 
     This function is specifically for ndarray
     with dtype of: "O" (object).
 
     ### Example:
     >>> '...NO1|5[i1,f1.234,o1,"abc",c1.0|1.0,]...'
-        return np.array([1, 1.234, True, "abc", 1 + 1j], dtype="O")
+        return numpy.array([1, 1.234, True, "abc", 1 + 1j], dtype="O")
     """
     # Parse ndarray shape
     shape = _parse_ndarray_shape(data, pos[0] + 2, pos[1])
@@ -1175,8 +1174,8 @@ def _deserialize_ndarray_object(data: str, pos: cython.Py_ssize_t[2]) -> object:
 
     # Invalid dimension
     raise errors.DeserializeValueError(
-        "<Serializor> Invalid deserialize 'data': "
-        "unsupported `<ndarray>` dimension [%d]." % ndim
+        "<Serializor> Failed to deserialize 'data': "
+        "unsupported <'numpy.ndarray'> dimension [%d]." % ndim
     )
 
 
@@ -1187,10 +1186,10 @@ def _parse_ndarray_shape(
     idx: cython.Py_ssize_t,
     eof: cython.Py_ssize_t,
 ) -> shape:  # type: ignore
-    """(cfunc) Parse numpy.ndarray `<shape>`.
+    """(cfunc) Parse numpy.ndarray `<'shape'>`.
 
-    :param data `<str>`: The serialized data that contains the ndarray token.
-    :param pos_s `<Py_ssize_t>`: The start position of the ndarray shape.
+    :param data `<'str'>`: The serialized data that contains the ndarray token.
+    :param pos_s `<'Py_ssize_t'>`: The start position of the ndarray shape.
 
     ### Example:
     >>> data = '...Ni2|2|2|2|3[1,2,3,...]...'
@@ -1243,18 +1242,18 @@ def _deserialize_series(
     item: cython.bint,
 ) -> object:
     """(cfunc) Deserialize the pandas.Series token
-    of the 'data' to `<Series>`.
+    of the 'data' to `<'pandas.Series'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the data position.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the data position.
         - pos[0]: The start position of the token.
         - pos[1]: The end (total length) of the data.
-    :param item `<bool>`: Whether the deserialization is for an item of the object.
+    :param item `<'bool'>`: Whether the deserialization is for an item of the object.
 
     ### Example:
     >>> data = '...Ii5[0,1,2,3,4]...'
         # Start position: ...{I}i1|5[0,1,2,3,4]...
-        return pd.Series([0, 1, 2, 3, 4], dtype=np.int64)
+        return pandas.Series([0, 1, 2, 3, 4], dtype=np.int64)
     """
     # Get Series dtype: I{i}5[0,1,2,3,4]
     dtype: cython.Py_UCS4 = read_char(data, pos[0] + 1)  # type: ignore
@@ -1299,8 +1298,8 @@ def _deserialize_series(
     # . unrecognized dtype
     else:
         raise errors.DeserializeValueError(
-            "<Serializor> Invalid deserialize 'data': "
-            "unknown `<Series>` dtype '%s'." % str_fr_ucs4(dtype)
+            "<Serializor> Failed to deserialize 'data': "
+            "unknown <'pandas.Series'> dtype '%s'." % str_fr_ucs4(dtype)
         )
 
     # Generate Series
@@ -1316,23 +1315,23 @@ def _deserialize_series_common(
     dtype: cython.int,
 ) -> object:
     """(cfunc) Deserialize pandas.Series token
-    of the 'data' to `<ndarray[str/float/int/uint/bool]>`.
+    of the 'data' to `<'ndarray[str/float/int/uint/bool]'>`.
 
     This function is specifically for Series with dtype of:
     "U" (str), "f" (float), "i" (int), "u" (uint) and "b" (bool).
 
     ### Example:
     >>> data = '...If3[1.1,2.2,3.3]...'
-        return np.array([1.1, 2.2, 3.3], dtype=np.float64)
+        return numpy.array([1.1, 2.2, 3.3], dtype=np.float64)
 
     >>> data = '...Ii3[1,2,3]...'
-        return np.array([1, 2, 3], dtype=np.int64)
+        return numpy.array([1, 2, 3], dtype=np.int64)
 
     >>> data = '...Iu3[1,2,3]...'
-        return np.array([1, 2, 3], dtype=np.uint64)
+        return numpy.array([1, 2, 3], dtype=np.uint64)
 
     >>> data = '...Ib3[1,0,1]...'
-        return np.array([True, False, True], dtype=np.bool_)
+        return numpy.array([True, False, True], dtype=np.bool_)
     """
     # Parse Series size
     idx: cython.Py_ssize_t = pos[0] + 2  # skip 'If'
@@ -1372,17 +1371,17 @@ def _deserialize_series_dt64td64(
     dt64: cython.bint,
 ) -> object:
     """(cfunc) Deserialize pandas.Series token
-    of the 'data' to `<ndarray[datetime64/timedelta64]>`.
+    of the 'data' to `<'ndarray[datetime64/timedelta64]'>`.
 
     This function is specifically for Series with
     dtype of: "M" (datetime64) and "m" (timedelta64).
 
     ### Example:
     >>> data = '...IMs3[1672531200,1672617600,1672704000]...'
-        return np.array([1672531200,1672617600,1672704000], dtype="datetime64[s]")
+        return numpy.array([1672531200,1672617600,1672704000], dtype="datetime64[s]")
 
     >>> data = '...Ims3[1,2,3]...'
-        return np.array([1, 2, 3], dtype="timedelta64[s]")
+        return numpy.array([1, 2, 3], dtype="timedelta64[s]")
     """
     # If the 4th character is ASCII digit [0-9]
     # unit is the 3rd character: IM{s}3
@@ -1429,14 +1428,14 @@ def _deserialize_series_complex(
     item: cython.bint,
 ) -> object:
     """(cfunc) Deserialize pandas.Series token
-    of the 'data' to `<ndarray[complex]>`.
+    of the 'data' to `<'ndarray[complex]'>`.
 
     This function is specifically for Series
     with dtype of: "c" (complex).
 
     ### Example:
     >>> data = '...Ic3[1.0,1.0,2.0,2.0,3.0,3.0]...'
-        return np.array([1 + 1j, 2 + 2j, 3 + 3j], dtype=np.complex128)
+        return numpy.array([1 + 1j, 2 + 2j, 3 + 3j], dtype=np.complex128)
     """
     # Parse Series size
     idx: cython.Py_ssize_t = pos[0] + 2  # skip 'Ic'
@@ -1473,14 +1472,14 @@ def _deserialize_series_bytes(
     item: cython.bint,
 ) -> object:
     """(cfunc) Deserialize pandas.Series token
-    of the 'data' to `<ndarray[bytes]>`.
+    of the 'data' to `<'ndarray[bytes]'>`.
 
     This function is specifically for Series
     with dtype of: "S" (bytes string).
 
     ### Example:
     >>> data = '...IS3["1","2","3"]...'
-        return np.array([b"1", b"2", b"3"], dtype="S")
+        return numpy.array([b"1", b"2", b"3"], dtype="S")
     """
     # Parse Series size
     idx: cython.Py_ssize_t = pos[0] + 2  # skip 'IS'
@@ -1513,14 +1512,14 @@ def _deserialize_series_bytes(
 @cython.inline(True)
 def _deserialize_series_object(data: str, pos: cython.Py_ssize_t[2]) -> object:
     """(cfunc) Deserialize pandas.Series token
-    of the 'data' to `<ndarray[object]>`.
+    of the 'data' to `<'ndarray[object]'>`.
 
     This function is specifically for Series
     with dtype of: "O" (object).
 
     ### Example:
     >>> data = '...IO3[i1,f1.234,o1]...'
-        return np.array([1, 1.234, True], dtype="O")
+        return numpy.array([1, 1.234, True], dtype="O")
     """
     # Parse Series size
     idx: cython.Py_ssize_t = pos[0] + 2  # skip 'IO'
@@ -1548,17 +1547,17 @@ def _deserialize_series_object(data: str, pos: cython.Py_ssize_t[2]) -> object:
 @cython.inline(True)
 def _deserialize_dataframe(data: str, pos: cython.Py_ssize_t[2]) -> object:
     """(cfunc) Deserialize the pandas.DataFrame token
-    of the 'data' to `<DataFrame>`.
+    of the 'data' to `<'pandas.DataFrame'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the data position.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the data position.
         - pos[0]: The start position of the token.
         - pos[1]: The end (total length) of the data.
 
     ### Example:
     >>> data = '...F3|9["i_col","f_col"][i[1,2,3],f[1.1,2.2,3.3],]...'
         # Start position: ...{F}3|9["i_col","f_col"][i[1,2,3],f[1.1,2.2,3.3],]...
-        return pd.DataFrame({"i_col": [1, 2, 3], "f_col": [1.1, 2.2, 3.3]})
+        return pandas.DataFrame({"i_col": [1, 2, 3], "f_col": [1.1, 2.2, 3.3]})
     """
     # Parse DataFrame rows: 'F{3}|'
     idx: cython.Py_ssize_t = pos[0] + 1  # skip identifier
@@ -1589,15 +1588,15 @@ def _deserialize_dataframe(data: str, pos: cython.Py_ssize_t[2]) -> object:
     for col in cols:
         # . get Series dtype: [{i}[1,2,3],f[1.1,2.2,3.3],]
         dtype: cython.Py_UCS4 = read_char(data, pos[0])  # type: ignore
-        # . `<object>`
+        # . `<'object'>`
         if dtype == prefix.NDARRAY_DTYPE_OBJECT_ID:
             val = _deserialize_dataframe_object(data, pos, rows)
-        # . `<float>`
+        # . `<'float'>`
         elif dtype == prefix.NDARRAY_DTYPE_FLOAT_ID:
             val = _deserialize_dataframe_common(
                 data, pos, rows, np.NPY_TYPES.NPY_FLOAT64
             )
-        # . `<int>`
+        # . `<'int'>`
         elif dtype == prefix.NDARRAY_DTYPE_INT_ID:
             val = _deserialize_dataframe_common(data, pos, rows, np.NPY_TYPES.NPY_INT64)
         # . `<uint>`
@@ -1605,7 +1604,7 @@ def _deserialize_dataframe(data: str, pos: cython.Py_ssize_t[2]) -> object:
             val = _deserialize_dataframe_common(
                 data, pos, rows, np.NPY_TYPES.NPY_UINT64
             )
-        # . `<bool>`
+        # . `<'bool'>`
         elif dtype == prefix.NDARRAY_DTYPE_BOOL_ID:
             val = _deserialize_dataframe_common(data, pos, rows, np.NPY_TYPES.NPY_BOOL)
         # . `<datetime64>`
@@ -1614,16 +1613,16 @@ def _deserialize_dataframe(data: str, pos: cython.Py_ssize_t[2]) -> object:
         # . `<timedelta64>`
         elif dtype == prefix.NDARRAY_DTYPE_TD64_ID:
             val = _deserialize_dataframe_dt64td64(data, pos, rows, False)
-        # . `<complex>`
+        # . `<'complex'>`
         elif dtype == prefix.NDARRAY_DTYPE_COMPLEX_ID:
             val = _deserialize_dataframe_complex(data, pos, rows)
-        # . `<bytes>`
+        # . `<'bytes'>`
         elif dtype == prefix.NDARRAY_DTYPE_BYTES_ID:
             val = np.PyArray_Cast(
                 _deserialize_dataframe_bytes(data, pos, rows),
                 np.NPY_TYPES.NPY_STRING,
             )
-        # . `<str>`
+        # . `<'str'>`
         elif dtype == prefix.NDARRAY_DTYPE_UNICODE_ID:
             val = np.PyArray_Cast(
                 _deserialize_dataframe_common(data, pos, rows, np.NPY_TYPES.NPY_OBJECT),
@@ -1632,8 +1631,8 @@ def _deserialize_dataframe(data: str, pos: cython.Py_ssize_t[2]) -> object:
         # . unrecognized dtype
         else:
             raise errors.DeserializeValueError(
-                "<Serializor> Invalid deserialize 'data': unknown "
-                "`<DataFrame>` column (Series) dtype '%s'." % str_fr_ucs4(dtype)
+                "<Serializor> Failed to deserialize 'data': unknown "
+                "<'pandas.DataFrame'> column (Series) dtype '%s'." % str_fr_ucs4(dtype)
             )
         # . collect
         res[col] = val
@@ -1654,7 +1653,7 @@ def _deserialize_dataframe_common(
     dtype: cython.int,
 ) -> object:
     """(cfunc) Deserialize pandas.DataFrame column token
-    of the 'data' to `<ndarray[str/float/int/uint/bool]>`.
+    of the 'data' to `<'ndarray[str/float/int/uint/bool]'>`.
 
     This function is specifically for DataFrame columns with dtype of:
     "U" (str), "f" (float), "i" (int), "u" (uint) and "b" (bool).
@@ -1685,7 +1684,7 @@ def _deserialize_dataframe_dt64td64(
     dt64: cython.bint,
 ) -> object:
     """(cfunc) Deserialize pandas.DataFrame column token
-    of the 'data' to `<ndarray[datetime64/timedelta64]>`.
+    of the 'data' to `<'ndarray[datetime64/timedelta64]'>`.
 
     This function is specifically for DataFrame columns with
     dtype of: "M" (datetime64) and 'm" (timedelta64).
@@ -1722,7 +1721,7 @@ def _deserialize_dataframe_complex(
     rows: cython.Py_ssize_t,
 ) -> object:
     """(cfunc) Deserialize pandas.DataFrame column token
-    of the 'data' to `<ndarray[complex]>`.
+    of the 'data' to `<'ndarray[complex]'>`.
 
     This function is specifically for DataFrame columns
     with dtype of: "c" (complex).
@@ -1749,7 +1748,7 @@ def _deserialize_dataframe_bytes(
     rows: cython.Py_ssize_t,
 ) -> object:
     """(cfunc) Deserialize pandas.DataFrame column token
-    of the 'data' to `<ndarray[bytes]>`.
+    of the 'data' to `<'ndarray[bytes]'>`.
 
     This function is specifically for DataFrame columns
     with dtype of: "S" (bytes string).
@@ -1776,7 +1775,7 @@ def _deserialize_dataframe_object(
     rows: cython.Py_ssize_t,
 ) -> object:
     """(cfunc) Deserialize pandas.DataFrame column token
-    of the 'data' to `<ndarray[object]>`.
+    of the 'data' to `<'ndarray[object]'>`.
 
     This function is specifically for DataFrame columns
     with dtype of: "O" (object).
@@ -1801,19 +1800,19 @@ def _deserialize_datetime_index(
     item: cython.bint,
 ) -> object:
     """(cfunc) Deserialize pandas.DatetimeIndex token
-    of the 'data' to `<DatetimeIndex>`.
+    of the 'data' to `<'pandas.DatetimeIndex'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the data position.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the data position.
         - pos[0]: The start position of the token.
         - pos[1]: The end (total length) of the data.
-    :param item `<bool>`: Whether the deserialization is for an item of the object.
+    :param item `<'bool'>`: Whether the deserialization is for an item of the object.
 
     ### Example:
     >>> data = '...ZIMs|3[1609459200,1609545600,1609632000]...'
         # Start position: ...{Z}IMs|3[1609459200,1609545600,1609632000]...
-        return pd.DatetimeIndex(
-            np.array([1609459200, 1609545600, 1609632000],
+        return pandas.DatetimeIndex(
+            numpy.array([1609459200, 1609545600, 1609632000],
             dtype="datetime64[s]")
         )
     """
@@ -1831,19 +1830,19 @@ def _deserialize_timedelta_index(
     item: cython.bint,
 ) -> object:
     """(cfunc) Deserialize pandas.TimedeltaIndex token
-    of the 'data' to `<TimedeltaIndex>`.
+    of the 'data' to `<'pandas.TimedeltaIndex'>`.
 
-    :param data `<str>`: The serialized data that contains the token.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the data position.
+    :param data `<'str'>`: The serialized data that contains the token.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the data position.
         - pos[0]: The start position of the token.
         - pos[1]: The end (total length) of the data.
-    :param item `<bool>`: Whether the deserialization is for an item of the object.
+    :param item `<'bool'>`: Whether the deserialization is for an item of the object.
 
     ### Example:
     >>> data = '...XIms|3[86400,172800,259200]...'
         # Start position: ...{X}IMs|3[86400,172800,259200]...
-        return pd.TimedeltaIndex(
-            np.array([86400, 172800, 259200],
+        return pandas.TimedeltaIndex(
+            numpy.array([86400, 172800, 259200],
             dtype="timedelta64[s]")
         )
     """
@@ -1857,98 +1856,98 @@ def _deserialize_timedelta_index(
 @cython.cfunc
 @cython.inline(True)
 def _deserialize_obj(data: str, pos: cython.Py_ssize_t[2]) -> object:
-    """(cfunc) Deserialize the serialized 'data' to a Python `<object>`."""
+    """(cfunc) Deserialize the serialized 'data' to a Python `<'object'>`."""
     # Peak Identifier
     obj_id: cython.Py_UCS4 = read_char(data, 0)  # type: ignore
 
     # Mapping Types
-    # . dict `<dict>`: D13["0","1","2"][f0.1,f1.1,f2.2,]
+    # . <'dict'>: D13["0","1","2"][f0.1,f1.1,f2.2,]
     if obj_id == prefix.DICT_ID:
         return _deserialize_dict(data, pos)
 
     # Sequence Types
-    # . list `<list>`: L4[i1,f3.14,o1,n,]
+    # . <'list'>: L4[i1,f3.14,o1,n,]
     if obj_id == prefix.LIST_ID:
         return _deserialize_list(data, pos)
-    # . tuple `<tuple>`: T4[i1,f3.14,o1,n,]
+    # . <'tuple'>: T4[i1,f3.14,o1,n,]
     if obj_id == prefix.TUPLE_ID:
         return _deserialize_tuple(data, pos)
-    # . set `<set>`: S4[i1,f3.14,o1,n,]
+    # . <'set'>: S4[i1,f3.14,o1,n,]
     if obj_id == prefix.SET_ID:
         return _deserialize_set(data, pos)
 
     # Basic Types
-    # . string `<str>`: 's5|Hello'
+    # . <'str'>: 's5|Hello'
     if obj_id == prefix.STR_ID:
         return _deserialize_str(data, pos)
-    # . float `<float>`: 'f3.14'
+    # . <'float'>: 'f3.14'
     if obj_id == prefix.FLOAT_ID:
         return _deserialize_float(data, 0, pos[1])  # type: ignore
-    # . integer `<int>`: 'i1024'
+    # . <'int'>: 'i1024'
     if obj_id == prefix.INT_ID:
         return _deserialize_int(data, 0, pos[1])  # type: ignore
-    # . boolean `<bool>`: 'o1'
+    # . <'bool'>: 'o1'
     if obj_id == prefix.BOOL_ID:
         return _deserialize_bool(data, 0)  # type: ignore
-    # . NoneType `<None>`: 'n'
+    # . <'None'>: 'n'
     if obj_id == prefix.NONE_ID:
         return None
 
     # Date&Time Types
-    # . datetime `<datetime.datetime>`: 'z2021-01-01T00:00:00'
+    # . <'datetime.datetime'>: 'z2021-01-01T00:00:00'
     if obj_id == prefix.DATETIME_ID:
         return _deserialize_datetime(data, 0, pos[1])
-    # . date `<datetime.date>`: 'd2021-01-01'
+    # . <'datetime.date'>: 'd2021-01-01'
     if obj_id == prefix.DATE_ID:
         return _deserialize_date(data, 0, pos[1])
-    # . time `<datetime.time>`: 't00:00:00.000001'
+    # . <'datetime.time'>: 't00:00:00.000001'
     if obj_id == prefix.TIME_ID:
         return _deserialize_time(data, 0, pos[1])
-    # . timedelta `<datetime.timedelta>`: 'l1|2|3'
+    # . <'datetime.timedelta'>: 'l1|2|3'
     if obj_id == prefix.TIMEDELTA_ID:
         return _deserialize_timedelta(data, 0, pos[1])
 
     # Numeric Types
-    # . decimal `<decimal>`: 'e3.14'
+    # . <'decimal.Decimal'>: 'e3.14'
     if obj_id == prefix.DECIMAL_ID:
         return _deserialize_decimal(data, 0, pos[1])
-    # . complex `<complex>`: 'c1.0|1.0'
+    # . <'complex'>: 'c1.0|1.0'
     if obj_id == prefix.COMPLEX_ID:
         return _deserialize_complex(data, 0, pos[1])
 
     # Bytes Types
-    # . bytes `<bytes>`: 'b5|Hello'
+    # . <'bytes'>: 'b5|Hello'
     if obj_id == prefix.BYTES_ID:
         return _deserialize_bytes(data, pos)
 
     # Numpy Types
-    # . numpy `<np.datetime64>`: 'Mus3661000001'
+    # . <'numpy.datetime64'>: 'Mus3661000001'
     if obj_id == prefix.DATETIME64_ID:
         return _deserialize_datetime64(data, 0, pos[1])
-    # . numpy `<np.timedelta64>`: 'mus1024'
+    # . <'numpy.timedelta64'>: 'mus1024'
     if obj_id == prefix.TIMEDELTA64_ID:
         return _deserialize_timedelta64(data, 0, pos[1])
-    # . numpy `<np.ndarray>`
+    # . <'numpy.ndarray'>
     if obj_id == prefix.NDARRAY_ID:
         return _deserialize_ndarray(data, pos, False)
 
     # Pandas Types
-    # . pandas `<pd.Series>`
+    # . <'pandas.Series'>
     if obj_id == prefix.SERIES_ID:
         return _deserialize_series(data, pos, False)
-    # . pandas `<pd.DataFrame>`
+    # . <'pandas.DataFrame'>
     if obj_id == prefix.DATAFRAME_ID:
         return _deserialize_dataframe(data, pos)
-    # . pandas `<pd.DatetimeIndex>`
+    # . <'pandas.DatetimeIndex'>
     if obj_id == prefix.DATETIMEINDEX_ID:
         return _deserialize_datetime_index(data, pos, False)
-    # . pandas `<pd.TimedeltaIndex>`
+    # . <'pandas.TimedeltaIndex'>
     if obj_id == prefix.TIMEDELTAINDEX_ID:
         return _deserialize_timedelta_index(data, pos, False)
 
     # Invalid 'data'
     raise errors.DeserializeValueError(
-        "<Serializor> Invalid deserialize 'data': "
+        "<Serializor> Failed to deserialize 'data': "
         "unknown object identifer '%s'." % str_fr_ucs4(obj_id)
     )
 
@@ -1956,10 +1955,10 @@ def _deserialize_obj(data: str, pos: cython.Py_ssize_t[2]) -> object:
 @cython.cfunc
 @cython.inline(True)
 def _deserialize_item(data: str, pos: cython.Py_ssize_t[2]) -> object:
-    """(cfunc) Deserialize the next item of the 'data' to an `<object>`.
+    """(cfunc) Deserialize the next item of the 'data' to an `<'object'>`.
 
-    :param data `<str>`: The serialized data that contains the items.
-    :param pos `<Py_ssize_t[2]>`: The pointer of the item position.
+    :param data `<'str'>`: The serialized data that contains the items.
+    :param pos `<'Py_ssize_t[2]'>`: The pointer of the item position.
         - pos[0]: The start position of the item.
         - pos[1]: The end (total length) of the data.
     """
@@ -1970,51 +1969,51 @@ def _deserialize_item(data: str, pos: cython.Py_ssize_t[2]) -> object:
 
     ##### Common Types #####
     # Basic Types
-    # . string `<str>`: '...s5|Hello,...'
+    # . <'str'>: '...s5|Hello,...'
     if obj_id == prefix.STR_ID:
         return _deserialize_str(data, pos)
-    # . float `<float>`: '...f3.14,...'
+    # . <'float'>: '...f3.14,...'
     if obj_id == prefix.FLOAT_ID:
         idx = pos[0]
         loc = find_item_separator(data, idx + 1, pos[1])  # type: ignore
         pos[0] = loc + 1  # update position
         return _deserialize_float(data, idx, loc)
-    # . integer `<int>`: '...i1024,...'
+    # . <'int'>: '...i1024,...'
     if obj_id == prefix.INT_ID:
         idx = pos[0]
         loc = find_item_separator(data, idx + 1, pos[1])  # type: ignore
         pos[0] = loc + 1  # update position
         return _deserialize_int(data, idx, loc)
-    # . boolean `<bool>`: '...o1,...'
+    # . <'bool'>: '...o1,...'
     if obj_id == prefix.BOOL_ID:
         idx = pos[0]
         pos[0] = idx + 3  # update position
         return _deserialize_bool(data, idx)
-    # . NoneType `<None>`: '...n,...'
+    # . <'None'>: '...n,...'
     if obj_id == prefix.NONE_ID:
         pos[0] += 2  # skip identifier & ','
         return None
 
     # Date&Time Types
-    # . datetime `<datetime.datetime>`: '...z2021-01-01T00:00:00,...'
+    # . <'datetime.datetime'>: '...z2021-01-01T00:00:00,...'
     if obj_id == prefix.DATETIME_ID:
         idx = pos[0]
         loc = find_item_separator(data, idx + 1, pos[1])  # type: ignore
         pos[0] = loc + 1  # update position
         return _deserialize_datetime(data, idx, loc)
-    # . date `<datetime.date>`: '...d2021-01-01,...'
+    # . <'datetime.date'>: '...d2021-01-01,...'
     if obj_id == prefix.DATE_ID:
         idx = pos[0]
         loc = find_item_separator(data, idx + 1, pos[1])  # type: ignore
         pos[0] = loc + 1  # update position
         return _deserialize_date(data, idx, loc)
-    # . time `<datetime.time>`: '...t00:00:00.000001,...'
+    # . <'datetime.time'>: '...t00:00:00.000001,...'
     if obj_id == prefix.TIME_ID:
         idx = pos[0]
         loc = find_item_separator(data, idx + 1, pos[1])  # type: ignore
         pos[0] = loc + 1  # update position
         return _deserialize_time(data, idx, loc)
-    # . timedelta `<datetime.timedelta>`: '...l1|2|3,...'
+    # . <'datetime.timedelta'>: '...l1|2|3,...'
     if obj_id == prefix.TIMEDELTA_ID:
         idx = pos[0]
         loc = find_item_separator(data, idx + 1, pos[1])  # type: ignore
@@ -2022,30 +2021,30 @@ def _deserialize_item(data: str, pos: cython.Py_ssize_t[2]) -> object:
         return _deserialize_timedelta(data, idx, loc)
 
     # Mapping Types
-    # . dict `<dict>`: '...D13["0","1","2"][f0.1,f1.1,f2.2,],...'
+    # . <'dict'>: '...D13["0","1","2"][f0.1,f1.1,f2.2,],...'
     if obj_id == prefix.DICT_ID:
         return _deserialize_dict(data, pos)
 
     # Sequence Types
-    # . list `<list>`: '...L4[i1,f3.14,o1,n,],...'
+    # . <'list'>: '...L4[i1,f3.14,o1,n,],...'
     if obj_id == prefix.LIST_ID:
         return _deserialize_list(data, pos)
-    # . tuple `<tuple>`: '...T4[i1,f3.14,o1,n,],...'
+    # . <'tuple'>: '...T4[i1,f3.14,o1,n,],...'
     if obj_id == prefix.TUPLE_ID:
         return _deserialize_tuple(data, pos)
-    # . set `<set>`: '...S4[i1,f3.14,o1,n,],...'
+    # . <'set'>: '...S4[i1,f3.14,o1,n,],...'
     if obj_id == prefix.SET_ID:
         return _deserialize_set(data, pos)
 
     #### Uncommon Types #####
     # Numeric Types
-    # . decimal `<decimal>`: '...e3.14,...'
+    # . <'decimal.Decimal'>: '...e3.14,...'
     if obj_id == prefix.DECIMAL_ID:
         idx = pos[0]
         loc = find_item_separator(data, idx + 1, pos[1])  # type: ignore
         pos[0] = loc + 1  # update position
         return _deserialize_decimal(data, idx, loc)
-    # . complex `<complex>`: '...c1.0|1.0,...'
+    # . <'complex'>: '...c1.0|1.0,...'
     if obj_id == prefix.COMPLEX_ID:
         idx = pos[0]
         loc = find_item_separator(data, idx + 1, pos[1])  # type: ignore
@@ -2053,52 +2052,51 @@ def _deserialize_item(data: str, pos: cython.Py_ssize_t[2]) -> object:
         return _deserialize_complex(data, idx, loc)
 
     # Bytes Types
-    # . bytes `<bytes>`: '...b5|Hello,...'
+    # . <'bytes'>: '...b5|Hello,...'
     if obj_id == prefix.BYTES_ID:
         return _deserialize_bytes(data, pos)
 
     # Numpy Types
-    # . numpy `<np.datetime64>`: '...Mus3661000001,...'
+    # . <'numpy.datetime64'>: '...Mus3661000001,...'
     if obj_id == prefix.DATETIME64_ID:
         idx = pos[0]
         loc = find_item_separator(data, idx + 1, pos[1])  # type: ignore
         pos[0] = loc + 1  # update position
         return _deserialize_datetime64(data, idx, loc)
-    # . numpy `<np.timedelta64>`: '...mus1024,...'
+    # . <'numpy.timedelta64'>: '...mus1024,...'
     if obj_id == prefix.TIMEDELTA64_ID:
         idx = pos[0]
         loc = find_item_separator(data, idx + 1, pos[1])  # type: ignore
         pos[0] = loc + 1  # update position
         return _deserialize_timedelta64(data, idx, loc)
-    # . numpy `<np.ndarray>`
+    # . <'numpy.ndarray'>
     if obj_id == prefix.NDARRAY_ID:
         return _deserialize_ndarray(data, pos, True)
 
     # Pandas Types
-    # . pandas `<pd.Series>`
+    # . <'pandas.Series'>
     if obj_id == prefix.SERIES_ID:
         return _deserialize_series(data, pos, True)
-    # . pandas `<pd.DataFrame>`
+    # . <'pandas.DataFrame'>
     if obj_id == prefix.DATAFRAME_ID:
         return _deserialize_dataframe(data, pos)
-    # . pandas `<pd.DatetimeIndex>`
+    # . <'pandas.DatetimeIndex'>
     if obj_id == prefix.DATETIMEINDEX_ID:
         return _deserialize_datetime_index(data, pos, True)
-    # . pandas `<pd.TimedeltaIndex>`
+    # . <'pandas.TimedeltaIndex'>
     if obj_id == prefix.TIMEDELTAINDEX_ID:
         return _deserialize_timedelta_index(data, pos, True)
 
     ##### Invalid 'data' #####
     raise errors.DeserializeValueError(
-        "<Serializor> Invalid deserialize 'data': "
+        "<Serializor> Failed to deserialize 'data': "
         "unknown object[item] identifer '%s'." % str_fr_ucs4(obj_id)
     )
 
 
 @cython.cfunc
 def capi_deserialize(data: str) -> object:
-    """(cfunc) Deserialize the serialized 'data' from `<str>`
-    format to a Python `<object>`.
+    """(cfunc) Deserialize the serialized 'data' to a Python `<'object'>`.
 
     The given 'data' must be the result of the `serialize()`
     function in this package, which will be used to re-create
@@ -2107,12 +2105,12 @@ def capi_deserialize(data: str) -> object:
     # Validate data
     if data is None:
         raise errors.DeserializeValueError(
-            "<Serializor> Invalid deserialize 'data': %s." % type(data)
+            "<Serializor> Failed to deserialize 'data': %s." % type(data)
         )
     eof: cython.Py_ssize_t = str_len(data)
     if eof == 0:
         raise errors.DeserializeValueError(
-            "<Serializor> Invalid deserialize 'data': '%s'." % data
+            "<Serializor> Failed to deserialize 'data': '%s'." % data
         )
     pos: cython.Py_ssize_t[2] = [0, eof]
 
@@ -2130,8 +2128,7 @@ def capi_deserialize(data: str) -> object:
 
 
 def deserialize(data: str) -> object:
-    """Deserialize the serialized 'data' from `<str>`
-    format to a Python `<object>`.
+    """Deserialize the serialized 'data' to a Python `<'object'>`.
 
     The given 'data' must be the result of the `serialize()`
     function in this package, which will be used to re-create

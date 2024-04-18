@@ -20,7 +20,7 @@ from serializor import serialize, deserialize, errors
 @cython.cfunc
 @cython.inline(True)
 def _convert_to_bytes(val: object) -> bytes:
-    """(cfunc) Convert the given object to `<bytes>`."""
+    """(cfunc) Convert the given object to `<'bytes'>`."""
     dtype = type(val)
     if dtype is str:
         return serialize.bytes_encode_utf8(val)
@@ -39,7 +39,7 @@ def _convert_to_bytes(val: object) -> bytes:
 @cython.cfunc
 @cython.inline(True)
 def _generate_salt(key: bytes) -> bytes:
-    """(cfunc) Generate a salt form the given key `<bytes>`."""
+    """(cfunc) Generate a salt form the given key `<'bytes'>`."""
     array: bytearray = bytearray()
     byte: cython.uint
     shift: cython.uint = 1
@@ -52,7 +52,7 @@ def _generate_salt(key: bytes) -> bytes:
 @cython.cfunc
 @cython.inline(True)
 def _create_fernet(key: bytes) -> object:
-    """(cfunc) Create a Fernet from the given key `<Fernet>`."""
+    """(cfunc) Create a Fernet from the given key `<'Fernet'>`."""
     salt = _generate_salt(key)
     return Fernet(
         urlsafe_b64encode(
@@ -70,7 +70,7 @@ def _create_fernet(key: bytes) -> object:
 # Encrypt ----------------------------------------------------------------------------
 @cython.cfunc
 def capi_encrypt(obj: object, key: str | bytes) -> bytes:
-    """(cfunc) Serialize and encrypt the Python object with the given key into `<bytes>`."""
+    """(cfunc) Serialize and encrypt the Python object with the given key into `<'bytes'>`."""
     # Serialize
     val = serialize.bytes_encode_utf8(serialize.capi_serialize(obj))
 
@@ -85,14 +85,14 @@ def capi_encrypt(obj: object, key: str | bytes) -> bytes:
 
 
 def encrypt(obj: object, key: str | bytes) -> bytes:
-    """Serialize and encrypt the Python object with the given key into `<bytes>`."""
+    """Serialize and encrypt the Python object with the given key into `<'bytes'>`."""
     return capi_encrypt(obj, key)
 
 
 # Decrypt ----------------------------------------------------------------------------
 @cython.cfunc
 def capi_decrypt(enc: bytes, key: str | bytes) -> object:
-    """(cfunc) Decrypt and deserialize data with the given key back to a Python `<object>`."""
+    """(cfunc) Decrypt and deserialize data with the given key back to a Python `<'object'>`."""
     # Decrypt
     fernet: Fernet = _create_fernet(_convert_to_bytes(key))
     try:
@@ -107,5 +107,5 @@ def capi_decrypt(enc: bytes, key: str | bytes) -> object:
 
 
 def decrypt(enc: bytes, key: str | bytes) -> object:
-    """Decrypt and deserialize data with the given key back to a Python `<object>`."""
+    """Decrypt and deserialize data with the given key back to a Python `<'object'>`."""
     return capi_decrypt(enc, key)
