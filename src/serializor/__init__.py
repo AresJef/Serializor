@@ -1,7 +1,7 @@
 # /usr/bin/python
 # -*- coding: UTF-8 -*-
-from serializor.serialize import serialize
-from serializor.deserialize import deserialize
+from serializor.ser import serialize
+from serializor.des import deserialize
 from serializor.crypto import encrypt, decrypt
 from serializor.errors import (
     SerializorError,

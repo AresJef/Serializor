@@ -5,8 +5,8 @@ from zoneinfo import ZoneInfo
 import datetime, numpy as np, pandas as pd
 from json import dumps as json_dumps, loads as json_loads
 from orjson import dumps as orjson_dumps, loads as orjson_loads, OPT_SERIALIZE_NUMPY
-from serializor.serialize import serialize
-from serializor.deserialize import deserialize
+from serializor.ser import serialize
+from serializor.des import deserialize
 from serializor.crypto import encrypt, decrypt
 
 

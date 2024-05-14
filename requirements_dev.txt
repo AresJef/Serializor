@@ -1,6 +1,6 @@
 cryptography>=41.0.1
 Cython==3.0.10
-cytimes>=1.0.1
+cytimes>=1.0.2
 numpy>=1.25.2
 orjson>=3.9.5
 pandas>=2.1.0

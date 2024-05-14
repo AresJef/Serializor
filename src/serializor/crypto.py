@@ -4,7 +4,7 @@
 
 # Cython imports
 import cython
-from cython.cimports.serializor import serialize, deserialize  # type: ignore
+from cython.cimports.serializor import ser, des  # type: ignore
 
 # Python imports
 from hashlib import sha256
@@ -13,7 +13,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.hashes import SHA256
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
-from serializor import serialize, deserialize, errors
+from serializor import ser, des, errors
 
 
 # Utils -----------------------------------------------------------------------------
@@ -23,7 +23,7 @@ def _convert_to_bytes(val: object) -> bytes:
     """(cfunc) Convert the given object to `<'bytes'>`."""
     dtype = type(val)
     if dtype is str:
-        return serialize.encode_str(val)
+        return ser.encode_str(val)
     if dtype is bytes:
         return val
     if dtype is bytearray:
@@ -72,7 +72,7 @@ def _create_fernet(key: bytes) -> object:
 def encrypt(obj: object, key: str | bytes) -> bytes:
     """Serialize and encrypt the Python object with the given key into `<'bytes'>`."""
     # Serialize
-    val = serialize.encode_str(serialize.serialize(obj))
+    val = ser.encode_str(ser.serialize(obj))
 
     # Encrypt
     fernet: Fernet = _create_fernet(_convert_to_bytes(key))
@@ -98,4 +98,4 @@ def decrypt(enc: bytes, key: str | bytes) -> object:
         ) from err
 
     # Deserialize
-    return deserialize.deserialize(serialize.decode_bytes(val))
+    return des.deserialize(ser.decode_bytes(val))

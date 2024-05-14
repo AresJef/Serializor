@@ -3,7 +3,7 @@
 from libc.stdlib cimport malloc, free, strtod, strtoll
 from cpython.unicode cimport PyUnicode_READ_CHAR as read_char
 from cpython.unicode cimport PyUnicode_Substring, PyUnicode_FindChar
-from serializor cimport serialize
+from serializor cimport ser
 
 # Constants
 cdef:
@@ -26,7 +26,7 @@ ctypedef struct sinfo:
 # Utils
 cdef inline object slice_to_bytes(str data, Py_ssize_t start, Py_ssize_t end):
     """Slice data `<'str'>` from 'start' to 'end', and convert to `<'bytes'>`."""
-    return serialize.encode_str(PyUnicode_Substring(data, start, end))
+    return ser.encode_str(PyUnicode_Substring(data, start, end))
 
 cdef inline unicode slice_to_unicode(str data, Py_ssize_t start, Py_ssize_t end):
     """Slice data `<'str'>` from 'start' to 'end', and convert to `<'unicode'>`."""

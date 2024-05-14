@@ -2,8 +2,22 @@
 
 Created to be used in a project, this package is published to github for ease of management and installation across different modules.
 
+### Installation
+Install from `PyPi`
+``` bash
+pip install serializor
+```
+
+Install from `github`
+``` bash
+pip install git+https://github.com/AresJef/Serializor.git
+```
+
+### Compatibility
+Supports Python 3.10 and above.
+
 ### Features
-This package is designed to serialize common Python object, and deserializes it back to the original (or compatiable) Python data type.
+This package is designed to serialize Python object, and deserializes it back to the original (or compatiable) Python object.
 
 Supported data types:
 - string: `str` -> deserialize to `str`
@@ -28,19 +42,24 @@ Supported data types:
 - pandas.Series: `pandas.Series` of above supported data types -> deserialize to `pandas.Series`
 - pandas.DataFrame: `pandas.DataFrame` of above supported data types -> deserialize to `pandas.DataFrame`
 
-### Installation
-Install from `PyPi`
-``` bash
-pip install serializor
-```
+### Usage (Serialization & Deserialization)
+```python
+from pandas import Series
+from serializor import serialize, deserialize
 
-Install from `github`
-``` bash
-pip install git+https://github.com/AresJef/Serializor.git
+obj = Series([1, 2, 3, 4, 5], name="test")
+en = serialize(obj)
+de = deserialize(en)
+print(de)
 ```
-
-### Compatibility
-Supports Python 3.10 and above.
+```
+0    1
+1    2
+2    3
+3    4
+4    5
+Name: test, dtype: int64
+```
 
 ### Acknowledgements
 serializor is based on several open-source repositories.
