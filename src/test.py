@@ -388,7 +388,7 @@ def benchmark() -> None:
 
     # Numeric Types
     if run_numeric_types:
-        rounds = 1_000_000_0
+        rounds = 1_000_000
 
         benchmark_simple_object(Decimal("3.1415926"), rounds, 0)  # `<decimal.Decimal>`
         benchmark_simple_object(1 + 1j, rounds, 0)  # `<complex>`
@@ -502,7 +502,7 @@ def benchmark() -> None:
 
     # Dict
     if run_dict:
-        rounds = 100_000
+        rounds = 1_000_000
 
         # fmt: off
         benchmark_dict({}, rounds, 2)  # `<str>`
