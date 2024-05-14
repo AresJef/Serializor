@@ -23,7 +23,7 @@ def _convert_to_bytes(val: object) -> bytes:
     """(cfunc) Convert the given object to `<'bytes'>`."""
     dtype = type(val)
     if dtype is str:
-        return serialize.bytes_encode_utf8(val)
+        return serialize.encode_str(val)
     if dtype is bytes:
         return val
     if dtype is bytearray:
@@ -31,7 +31,7 @@ def _convert_to_bytes(val: object) -> bytes:
     if dtype is memoryview:
         return val.tobytes()
     raise errors.CryptoTypeError(
-        "<Serializor> Expects <'str'> or <'bytes'>, "
+        "<'Serializor'>\nExpects <'str'> or <'bytes'>, "
         "instead got: %s %s." % (dtype, repr(val))
     )
 
@@ -68,11 +68,11 @@ def _create_fernet(key: bytes) -> object:
 
 
 # Encrypt ----------------------------------------------------------------------------
-@cython.cfunc
-def capi_encrypt(obj: object, key: str | bytes) -> bytes:
-    """(cfunc) Serialize and encrypt the Python object with the given key into `<'bytes'>`."""
+@cython.ccall
+def encrypt(obj: object, key: str | bytes) -> bytes:
+    """Serialize and encrypt the Python object with the given key into `<'bytes'>`."""
     # Serialize
-    val = serialize.bytes_encode_utf8(serialize.capi_serialize(obj))
+    val = serialize.encode_str(serialize.serialize(obj))
 
     # Encrypt
     fernet: Fernet = _create_fernet(_convert_to_bytes(key))
@@ -80,18 +80,13 @@ def capi_encrypt(obj: object, key: str | bytes) -> bytes:
         return fernet.encrypt(val)
     except Exception as err:
         raise errors.CryptoError(
-            "<Serializor> Object encryption failed: %s" % err
+            "<'Serializor'>\nObject encryption failed: %s" % err
         ) from err
 
 
-def encrypt(obj: object, key: str | bytes) -> bytes:
-    """Serialize and encrypt the Python object with the given key into `<'bytes'>`."""
-    return capi_encrypt(obj, key)
-
-
 # Decrypt ----------------------------------------------------------------------------
-@cython.cfunc
-def capi_decrypt(enc: bytes, key: str | bytes) -> object:
+@cython.ccall
+def decrypt(enc: bytes, key: str | bytes) -> object:
     """(cfunc) Decrypt and deserialize data with the given key back to a Python `<'object'>`."""
     # Decrypt
     fernet: Fernet = _create_fernet(_convert_to_bytes(key))
@@ -99,13 +94,8 @@ def capi_decrypt(enc: bytes, key: str | bytes) -> object:
         val = fernet.decrypt(enc)
     except Exception as err:
         raise errors.CryptoError(
-            "<Serializor> Data decryption failed: %s" % err
+            "<'Serializor'>\nData decryption failed: %s" % err
         ) from err
 
     # Deserialize
-    return deserialize.capi_deserialize(serialize.bytes_decode_utf8(val))
-
-
-def decrypt(enc: bytes, key: str | bytes) -> object:
-    """Decrypt and deserialize data with the given key back to a Python `<'object'>`."""
-    return capi_decrypt(enc, key)
+    return deserialize.deserialize(serialize.decode_bytes(val))

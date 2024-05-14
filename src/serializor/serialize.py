@@ -7,7 +7,6 @@ import cython
 from cython.cimports import numpy as np  # type: ignore
 from cython.cimports.cpython import datetime  # type: ignore
 from cython.cimports.libc.math import isnormal  # type: ignore
-from cython.cimports.cpython.unicode import PyUnicode_READ_CHAR as read_char  # type: ignore
 from cython.cimports.cpython.unicode import PyUnicode_GET_LENGTH as str_len  # type: ignore
 from cython.cimports.cpython.unicode import PyUnicode_Substring as str_substr  # type: ignore
 from cython.cimports.cpython.set import PySet_GET_SIZE as set_len  # type: ignore
@@ -20,6 +19,7 @@ from cython.cimports.cpython.complex import PyComplex_ImagAsDouble as complex_ge
 from cython.cimports.serializor import prefix, typeref  # type: ignore
 
 np.import_array()
+np.import_umath()
 datetime.import_datetime()
 
 # Python imports
@@ -40,7 +40,7 @@ FN_ORJSON_DUMPS: Callable = dumps
 def _orjson_dumps(obj: object) -> str:
     """(cfunc) Serialize object using
     'orjson <https://github.com/ijl/orjson>' into JSON `<'str'>`."""
-    return bytes_decode_utf8(FN_ORJSON_DUMPS(obj))  # type: ignore
+    return decode_bytes(FN_ORJSON_DUMPS(obj))  # type: ignore
 
 
 # Basic Types -----------------------------------------------------------------------
@@ -292,7 +292,7 @@ def _serialize_bytes(obj: object) -> str:
         # str value:  b5|{Hello}
         return "b5|Hello"
     """
-    val: str = bytes_decode_utf8(obj)  # type: ignore
+    val: str = decode_bytes(obj)  # type: ignore
     return "%s%d|%s" % (prefix.BYTES, str_len(val), val)
 
 
@@ -310,7 +310,7 @@ def _serialize_bytearray(obj: object) -> str:
         # str value:  b5|{Hello}
         return "b5|Hello"
     """
-    val = bytearray_decode_utf8(obj)  # type: ignore
+    val = decode_bytearray(obj)  # type: ignore
     return "%s%d|%s" % (prefix.BYTES, str_len(val), val)
 
 
@@ -368,7 +368,7 @@ def _serialize_dict(obj: object) -> str:
         if str_len(keys_str) > 30:
             keys_str = "\n" + keys_str
         raise errors.SerializeTypeError(
-            "<Serializor> Failed to serialize <'dict'> keys: %s\n"
+            "<'Serializor'>\nFailed to serialize <'dict'> keys: %s\n"
             "Only support dict keys of the following data types: "
             "<'str'>, <'float'>, <'int'> or <'bool'>." % keys_str
         ) from err
@@ -591,7 +591,7 @@ def _serialize_datetime64(obj: object) -> str:
     # if unit == np.NPY_DATETIMEUNIT.NPY_FR_B:
     #     return prefix.DATETIME64_B + val_str
     raise errors.SerializeTypeError(
-        "<Serializor> Failed to serialize %s: "
+        "<'Serializor'>\nFailed to serialize %s: "
         "unknown <'numpy.datetime64'> unit [%s]." % (repr(obj), unit)
     )
 
@@ -642,7 +642,7 @@ def _serialize_timedelta64(obj: object) -> str:
     # if unit == np.NPY_DATETIMEUNIT.NPY_FR_B:
     #     return prefix.TIMEDELTA64_B + val_str
     raise errors.SerializeTypeError(
-        "<Serializor> Failed to serialize %s: "
+        "<'Serializor'>\nFailed to serialize %s: "
         "unknown <'numpy.timedelta64'> unit [%s]." % (repr(obj), unit)
     )
 
@@ -676,11 +676,11 @@ def _serialize_ndarray(obj: np.ndarray) -> str:
     ndim: cython.Py_ssize_t = obj.ndim
     if ndim == 0:
         raise errors.SerializeTypeError(
-            "<Serializor> Can't not serialize 0-dimensional <'numpy.ndarray'>."
+            "<'Serializor'>\nCan't not serialize 0-dimensional <'numpy.ndarray'>."
         )
     if ndim > 4:
         raise errors.SerializeTypeError(
-            "<Serializor> Can't not serialize <'numpy.ndarray'> with more than 4 dimensions."
+            "<'Serializor'>\nCan't not serialize <'numpy.ndarray'> with more than 4 dimensions."
         )
 
     # Get ndarray dtype
@@ -721,9 +721,107 @@ def _serialize_ndarray(obj: np.ndarray) -> str:
         return _serialize_ndarray_common(obj, ndim, prefix.NDARRAY_UNICODE)
     # . invalid dtype
     raise errors.SerializeTypeError(
-        "<Serializor> Failed to serialize <'numpy.ndarray'>: "
+        "<'Serializor'>\nFailed to serialize <'numpy.ndarray'>: "
         "unsupported dtype [%s]." % obj.dtype
     )
+
+
+@cython.cfunc
+@cython.inline(True)
+def _serialize_ndarray_object(obj: np.ndarray, ndim: cython.Py_ssize_t) -> str:
+    """(cfunc) Serialize `<'numpy.ndarray'>` to `<'str'>`.
+
+    This function is specifically for ndarray
+    with dtype of: "O" (object).
+
+    ### Example:
+    >>> obj = numpy.array([1, 1.234, True, "abc", 1 + 1j], dtype="O")
+        # identifier: {N}O1|5[i1,f1.234,o1,s3|abc,c1.0|1.0,]
+        # dtype:      N{O}1|5[i1,f1.234,o1,s3|abc,c1.0|1.0,]
+        # dimension:  NO{1}|5[i1,f1.234,o1,s3|abc,c1.0|1.0,]
+        # shape:      NO1|{5}[i1,f1.234,o1,s3|abc,c1.0|1.0,]
+        # items:      NO1|5{[i1,f1.234,o1,s3|abc,c1.0|1.0,]}
+        return 'NO1|5[i1,f1.234,o1,s3|abc,c1.0|1.0,]'
+
+    ### Notes:
+    - 1. Different from other dtypes, [items] section for object
+         does not use 'orjson.dumps' for serialization. Instead,
+         it performs custom serialization similar to a list.
+    - 2. Empty ndarray, returns 'NO1|0[]' (1-dimensional).
+    - 3. Non-empty ndarray, [items] section always end with a
+         comma followed by the closing bracket `',]'`.
+    """
+    shape = obj.shape
+    s_i: cython.Py_ssize_t
+    s_j: cython.Py_ssize_t
+    s_k: cython.Py_ssize_t
+    s_l: cython.Py_ssize_t
+    # 1-dimensional
+    if ndim == 1:
+        s_i, s_j, s_k, s_l = shape[0], 0, 0, 0
+        # . empty ndarray
+        if s_i == 0:  # 'NO1|0[]'
+            return "%s1|0[]" % prefix.NDARRAY_OBJECT
+        # . serialize ndarray[object]
+        items = [_serialize_common_type(ndarray_getitem_1d(obj, i)) for i in range(s_i)]  # type: ignore
+        # fmt: off
+        return "%s1|%d[%s,]" % (  # 'NO1|3[...,]'
+            prefix.NDARRAY_OBJECT, s_i, ",".join(items))
+        # fmt: on
+
+    # 2-dimensional
+    if ndim == 2:
+        s_i, s_j, s_k, s_l = shape[0], shape[1], 0, 0
+        # . empty prefix.ndarray
+        if s_j == 0:  # 'NO2|2|0[]'
+            return "%s2|%d|0[]" % (prefix.NDARRAY_OBJECT, s_i)
+        # . serialize ndarray[object]
+        items = [
+            _serialize_common_type(ndarray_getitem_2d(obj, i, j))  # type: ignore
+            for i in range(s_i)
+            for j in range(s_j)
+        ]
+        # fmt: off
+        return "%s2|%d|%d[%s,]" % (  # 'NO2|2|3[...,]'
+            prefix.NDARRAY_OBJECT, s_i, s_j, ",".join(items))
+        # fmt: on
+
+    # 3-dimensional
+    if ndim == 3:
+        s_i, s_j, s_k, s_l = shape[0], shape[1], shape[2], 0
+        # . empty ndarray
+        if s_k == 0:  # 'NO3|2|2|0[]'
+            return "%s3|%d|%d|0[]" % (prefix.NDARRAY_OBJECT, s_i, s_j)
+        # . serialize ndarray[object]
+        items = [
+            _serialize_common_type(ndarray_getitem_3d(obj, i, j, k))  # type: ignore
+            for i in range(s_i)
+            for j in range(s_j)
+            for k in range(s_k)
+        ]
+        # fmt: off
+        return "%s3|%d|%d|%d[%s,]" % (  # 'NO3|2|2|3[...,]'
+            prefix.NDARRAY_OBJECT, s_i, s_j, s_k, ",".join(items))
+        # fmt: on
+
+    # 4-dimensional
+    else:
+        s_i, s_j, s_k, s_l = shape[0], shape[1], shape[2], shape[3]
+        # . empty ndarray
+        if s_l == 0:  # 'NO4|2|2|2|0[]'
+            return "%s4|%d|%d|%d|0[]" % (prefix.NDARRAY_OBJECT, s_i, s_j, s_k)
+        # . serialize ndarray[object]
+        items = [
+            _serialize_common_type(ndarray_getitem_4d(obj, i, j, k, l))  # type: ignore
+            for i in range(s_i)
+            for j in range(s_j)
+            for k in range(s_k)
+            for l in range(s_l)
+        ]
+        # fmt: off
+        return "%s4|%d|%d|%d|%d[%s,]" % (  # 'NO4|2|2|2|3[...,]'
+            prefix.NDARRAY_OBJECT, s_i, s_j, s_k, s_l, ",".join(items))
+        # fmt: on
 
 
 @cython.cfunc
@@ -1046,7 +1144,7 @@ def _match_ndarray_dt64td64_dtype(unit: np.NPY_DATETIMEUNIT, dt64: cython.bint) 
     # if unit == np.NPY_DATETIMEUNIT.NPY_FR_B:
     #     return prefix.NDARRAY_DTYPE_DT64_B if dt64 else prefix.NDARRAY_DTYPE_TD64_B
     raise errors.SerializeTypeError(
-        "<Serializor> Failed to serialize <'ndarray[%s']>: unknown time unit [%d]."
+        "<'Serializor'>\nFailed to serialize <'ndarray[%s']>: unknown time unit [%d]."
         % ("datetime64" if dt64 else "timedelta64", unit)
     )
 
@@ -1059,7 +1157,7 @@ def _parse_ndarray_dt64td64_dtype(dtype_str: object, dt64: cython.bint) -> str:
     unit: str = str_substr(dtype_str, 4, str_len(dtype_str) - 1)
     if not 1 <= str_len(unit) <= 2:
         raise errors.SerializeTypeError(
-            "<Serializor> Failed to serialize <'ndarray[%s]'>: unknown time unit [%s]."
+            "<'Serializor'>\nFailed to serialize <'ndarray[%s]'>: unknown time unit [%s]."
             % ("datetime64" if dt64 else "timedelta64", unit)
         )
     if dt64:
@@ -1174,8 +1272,7 @@ def _serialize_ndarray_bytes(obj: np.ndarray, ndim: cython.Py_ssize_t) -> str:
     if ndim == 1:
         s_i, s_j, s_k, s_l = shape[0], 0, 0, 0
         items = [
-            bytes_decode_utf8(ndarray_getitem_1d(obj, i))  # type: ignore
-            for i in range(s_i)
+            decode_bytes(ndarray_getitem_1d(obj, i)) for i in range(s_i)  # type: ignore
         ]
         # fmt: off
         return "%s1|%d%s" % (  # 'NS1|3[...]'
@@ -1186,7 +1283,7 @@ def _serialize_ndarray_bytes(obj: np.ndarray, ndim: cython.Py_ssize_t) -> str:
     elif ndim == 2:
         s_i, s_j, s_k, s_l = shape[0], shape[1], 0, 0
         items = [
-            bytes_decode_utf8(ndarray_getitem_2d(obj, i, j))  # type: ignore
+            decode_bytes(ndarray_getitem_2d(obj, i, j))  # type: ignore
             for i in range(s_i)
             for j in range(s_j)
         ]
@@ -1199,7 +1296,7 @@ def _serialize_ndarray_bytes(obj: np.ndarray, ndim: cython.Py_ssize_t) -> str:
     elif ndim == 3:
         s_i, s_j, s_k, s_l = shape[0], shape[1], shape[2], 0
         items = [
-            bytes_decode_utf8(ndarray_getitem_3d(obj, i, j, k))  # type: ignore
+            decode_bytes(ndarray_getitem_3d(obj, i, j, k))  # type: ignore
             for i in range(s_i)
             for j in range(s_j)
             for k in range(s_k)
@@ -1213,7 +1310,7 @@ def _serialize_ndarray_bytes(obj: np.ndarray, ndim: cython.Py_ssize_t) -> str:
     else:
         s_i, s_j, s_k, s_l = shape[0], shape[1], shape[2], shape[3]
         items = [
-            bytes_decode_utf8(ndarray_getitem_4d(obj, i, j, k, l))  # type: ignore
+            decode_bytes(ndarray_getitem_4d(obj, i, j, k, l))  # type: ignore
             for i in range(s_i)
             for j in range(s_j)
             for k in range(s_k)
@@ -1222,104 +1319,6 @@ def _serialize_ndarray_bytes(obj: np.ndarray, ndim: cython.Py_ssize_t) -> str:
         # fmt: off
         return "%s4|%d|%d|%d|%d%s" % (  # 'NS4|2|2|2|3[...]'
             prefix.NDARRAY_BYTES, s_i, s_j, s_k, s_l, _orjson_dumps(items))
-        # fmt: on
-
-
-@cython.cfunc
-@cython.inline(True)
-def _serialize_ndarray_object(obj: np.ndarray, ndim: cython.Py_ssize_t) -> str:
-    """(cfunc) Serialize `<'numpy.ndarray'>` to `<'str'>`.
-
-    This function is specifically for ndarray
-    with dtype of: "O" (object).
-
-    ### Example:
-    >>> obj = numpy.array([1, 1.234, True, "abc", 1 + 1j], dtype="O")
-        # identifier: {N}O1|5[i1,f1.234,o1,s3|abc,c1.0|1.0,]
-        # dtype:      N{O}1|5[i1,f1.234,o1,s3|abc,c1.0|1.0,]
-        # dimension:  NO{1}|5[i1,f1.234,o1,s3|abc,c1.0|1.0,]
-        # shape:      NO1|{5}[i1,f1.234,o1,s3|abc,c1.0|1.0,]
-        # items:      NO1|5{[i1,f1.234,o1,s3|abc,c1.0|1.0,]}
-        return 'NO1|5[i1,f1.234,o1,s3|abc,c1.0|1.0,]'
-
-    ### Notes:
-    - 1. Different from other dtypes, [items] section for object
-         does not use 'orjson.dumps' for serialization. Instead,
-         it performs custom serialization similar to a list.
-    - 2. Empty ndarray, returns 'NO1|0[]' (1-dimensional).
-    - 3. Non-empty ndarray, [items] section always end with a
-         comma followed by the closing bracket `',]'`.
-    """
-    shape = obj.shape
-    s_i: cython.Py_ssize_t
-    s_j: cython.Py_ssize_t
-    s_k: cython.Py_ssize_t
-    s_l: cython.Py_ssize_t
-    # 1-dimensional
-    if ndim == 1:
-        s_i, s_j, s_k, s_l = shape[0], 0, 0, 0
-        # . empty ndarray
-        if s_i == 0:  # 'NO1|0[]'
-            return "%s1|0[]" % prefix.NDARRAY_OBJECT
-        # . serialize ndarray[object]
-        items = [_serialize_common_type(ndarray_getitem_1d(obj, i)) for i in range(s_i)]  # type: ignore
-        # fmt: off
-        return "%s1|%d[%s,]" % (  # 'NO1|3[...,]'
-            prefix.NDARRAY_OBJECT, s_i, ",".join(items))
-        # fmt: on
-
-    # 2-dimensional
-    if ndim == 2:
-        s_i, s_j, s_k, s_l = shape[0], shape[1], 0, 0
-        # . empty prefix.ndarray
-        if s_j == 0:  # 'NO2|2|0[]'
-            return "%s2|%d|0[]" % (prefix.NDARRAY_OBJECT, s_i)
-        # . serialize ndarray[object]
-        items = [
-            _serialize_common_type(ndarray_getitem_2d(obj, i, j))  # type: ignore
-            for i in range(s_i)
-            for j in range(s_j)
-        ]
-        # fmt: off
-        return "%s2|%d|%d[%s,]" % (  # 'NO2|2|3[...,]'
-            prefix.NDARRAY_OBJECT, s_i, s_j, ",".join(items))
-        # fmt: on
-
-    # 3-dimensional
-    if ndim == 3:
-        s_i, s_j, s_k, s_l = shape[0], shape[1], shape[2], 0
-        # . empty ndarray
-        if s_k == 0:  # 'NO3|2|2|0[]'
-            return "%s3|%d|%d|0[]" % (prefix.NDARRAY_OBJECT, s_i, s_j)
-        # . serialize ndarray[object]
-        items = [
-            _serialize_common_type(ndarray_getitem_3d(obj, i, j, k))  # type: ignore
-            for i in range(s_i)
-            for j in range(s_j)
-            for k in range(s_k)
-        ]
-        # fmt: off
-        return "%s3|%d|%d|%d[%s,]" % (  # 'NO3|2|2|3[...,]'
-            prefix.NDARRAY_OBJECT, s_i, s_j, s_k, ",".join(items))
-        # fmt: on
-
-    # 4-dimensional
-    else:
-        s_i, s_j, s_k, s_l = shape[0], shape[1], shape[2], shape[3]
-        # . empty ndarray
-        if s_l == 0:  # 'NO4|2|2|2|0[]'
-            return "%s4|%d|%d|%d|0[]" % (prefix.NDARRAY_OBJECT, s_i, s_j, s_k)
-        # . serialize ndarray[object]
-        items = [
-            _serialize_common_type(ndarray_getitem_4d(obj, i, j, k, l))  # type: ignore
-            for i in range(s_i)
-            for j in range(s_j)
-            for k in range(s_k)
-            for l in range(s_l)
-        ]
-        # fmt: off
-        return "%s4|%d|%d|%d|%d[%s,]" % (  # 'NO4|2|2|2|3[...,]'
-            prefix.NDARRAY_OBJECT, s_i, s_j, s_k, s_l, ",".join(items))
         # fmt: on
 
 
@@ -1346,7 +1345,8 @@ def _serialize_series(obj: Series) -> str:
          to the serialization process of a list. For more details, please
          refer to the `_serialize_series_object()` function.
     """
-    # Access Series values
+    # Access Series name & values
+    name: object = obj.name
     values: np.ndarray = obj.values
 
     # Get Series dtype
@@ -1358,46 +1358,90 @@ def _serialize_series(obj: Series) -> str:
     # Serialize Series
     # . Series[object]
     if dtype == prefix.NDARRAY_DTYPE_OBJECT_ID:
-        return _serialize_series_object(values, size)
+        return _serialize_series_object(name, values, size)
     # . Series[float]
     if dtype == prefix.NDARRAY_DTYPE_FLOAT_ID:
         if np.PyArray_TYPE(values) == np.NPY_TYPES.NPY_FLOAT16:
             values = np.PyArray_Cast(values, np.NPY_TYPES.NPY_FLOAT32)
-        return _serialize_series_common(values, size, prefix.SERIES_FLOAT)
+        return _serialize_series_common(name, values, size, prefix.SERIES_FLOAT)
     # . Series[int]
     if dtype == prefix.NDARRAY_DTYPE_INT_ID:
-        return _serialize_series_common(values, size, prefix.SERIES_INT)
+        return _serialize_series_common(name, values, size, prefix.SERIES_INT)
     # . Series[uint]
     if dtype == prefix.NDARRAY_DTYPE_UINT_ID:
-        return _serialize_series_common(values, size, prefix.SERIES_UINT)
+        return _serialize_series_common(name, values, size, prefix.SERIES_UINT)
     # . Series[bool]
     if dtype == prefix.NDARRAY_DTYPE_BOOL_ID:
-        return _serialize_series_bool(values, size)
+        return _serialize_series_bool(name, values, size)
     # . Series[datetime64]
     if dtype == prefix.NDARRAY_DTYPE_DT64_ID:
-        return _serialize_series_dt64td64(values, size, True)
+        return _serialize_series_dt64td64(name, values, size, True)
     # . Series[timedelta64]
     if dtype == prefix.NDARRAY_DTYPE_TD64_ID:
-        return _serialize_series_dt64td64(values, size, False)
+        return _serialize_series_dt64td64(name, values, size, False)
     # . Series[complex]
     if dtype == prefix.NDARRAY_DTYPE_COMPLEX_ID:
-        return _serialize_series_complex(values, size)
+        return _serialize_series_complex(name, values, size)
     # . Series[bytes]
     if dtype == prefix.NDARRAY_DTYPE_BYTES_ID:
-        return _serialize_series_bytes(values, size)
+        return _serialize_series_bytes(name, values, size)
     # . Series[str]
     if dtype == prefix.NDARRAY_DTYPE_UNICODE_ID:
-        return _serialize_series_common(values, size, prefix.SERIES_UNICODE)
+        return _serialize_series_common(name, values, size, prefix.SERIES_UNICODE)
     # . invalid dtype
     raise errors.SerializeTypeError(
-        "<Serializor> Failed to serialize <'pandas.Series'>: "
+        "<'Serializor'>\nFailed to serialize <'pandas.Series'>: "
         "unsupported dtype [%s]." % obj.dtype
     )
 
 
 @cython.cfunc
 @cython.inline(True)
+def _serialize_series_object(
+    name: object,
+    values: np.ndarray,
+    size: cython.Py_ssize_t,
+) -> str:
+    """(cfunc) Serialize `<'pandas.Series'>` to `<'str'>`.
+
+    This function is specifically for Series
+    with dtype of: "O" (object).
+
+    ### Example:
+    >>> obj = pandas.Series([1, 1.234, True, "abc", 1 + 1j])
+        # identifier: {I}O5[i1,f1.234,o1,s3|abc,c1.0|1.0,]
+        # dtype:      I{O}5[i1,f1.234,o1,s3|abc,c1.0|1.0,]
+        # ser size:   IO{5}[i1,f1.234,o1,s3|abc,c1.0|1.0,]
+        # items:      IO5{[i1,f1.234,o1,s3|abc,c1.0|1.0,]}
+        return 'IO5[i1,f1.234,o1,s3|abc,c1.0|1.0,]'
+
+    ### Notes:
+    - 1. Different from other dtypes, [items] section for object
+         does not use 'orjson.dumps' for serialization. Instead,
+         it performs custom serialization similar to a list.
+    - 2. Empty Series, returns 'IO1|0[]'.
+    - 3. Non-empty Series, [items] section always end with a
+         comma followed by the closing bracket `',]'`.
+    """
+    # Empty Series
+    if size == 0:  # 'IO1|0[]'
+        if name is None:
+            return "%s0[]" % prefix.SERIES_OBJECT
+        else:
+            return "%s0|%s[]" % (prefix.SERIES_OBJECT, name)
+
+    # Serialize Series[object]
+    items = [_serialize_common_type(ndarray_getitem_1d(values, i)) for i in range(size)]  # type: ignore
+    if name is None:
+        return "%s%d[%s,]" % (prefix.SERIES_OBJECT, size, ",".join(items))
+    else:
+        return "%s%d|%s[%s,]" % (prefix.SERIES_OBJECT, size, name, ",".join(items))
+
+
+@cython.cfunc
+@cython.inline(True)
 def _serialize_series_common(
+    name: object,
     values: np.ndarray,
     size: cython.Py_ssize_t,
     pfix: str,
@@ -1424,12 +1468,19 @@ def _serialize_series_common(
         return 'Iu3[1,2,3]'
     """
     items = [ndarray_getitem_1d(values, i) for i in range(size)]  # type: ignore
-    return "%s%d%s" % (pfix, size, _orjson_dumps(items))
+    if name is None:
+        return "%s%d%s" % (pfix, size, _orjson_dumps(items))
+    else:
+        return "%s%d|%s%s" % (pfix, size, name, _orjson_dumps(items))
 
 
 @cython.cfunc
 @cython.inline(True)
-def _serialize_series_bool(values: np.ndarray, size: cython.Py_ssize_t) -> str:
+def _serialize_series_bool(
+    name: object,
+    values: np.ndarray,
+    size: cython.Py_ssize_t,
+) -> str:
     """(cfunc) Serialize `<'pandas.Series'>` to `<'str'>`.
 
     This function is specifically for Series
@@ -1444,12 +1495,16 @@ def _serialize_series_bool(values: np.ndarray, size: cython.Py_ssize_t) -> str:
         return 'Ib3[1,0,1]'
     """
     items = [1 if ndarray_getitem_1d(values, i) else 0 for i in range(size)]  # type: ignore
-    return "%s%d%s" % (prefix.SERIES_BOOL, size, _orjson_dumps(items))
+    if name is None:
+        return "%s%d%s" % (prefix.SERIES_BOOL, size, _orjson_dumps(items))
+    else:
+        return "%s%d|%s%s" % (prefix.SERIES_BOOL, size, name, _orjson_dumps(items))
 
 
 @cython.cfunc
 @cython.inline(True)
 def _serialize_series_dt64td64(
+    name: object,
     values: np.ndarray,
     size: cython.Py_ssize_t,
     dt64: cython.bint,
@@ -1479,18 +1534,28 @@ def _serialize_series_dt64td64(
     # Empty Series
     if size == 0:
         dtype = _parse_ndarray_dt64td64_dtype(values.dtype.str, dt64)
-        return "%s%s0[]" % (prefix.SERIES, dtype)
+        if name is None:
+            return "%s%s0[]" % (prefix.SERIES, dtype)
+        else:
+            return "%s%s0|%s[]" % (prefix.SERIES, dtype, name)
     # Cast into int64
     dtype = _match_ndarray_dt64td64_dtype(np.get_datetime64_unit(values[0]), dt64)
     values = np.PyArray_Cast(values, np.NPY_TYPES.NPY_INT64)
     # Serialization
     items = [ndarray_getitem_1d(values, i) for i in range(size)]  # type: ignore
-    return "%s%s%d%s" % (prefix.SERIES, dtype, size, _orjson_dumps(items))
+    if name is None:
+        return "%s%s%d%s" % (prefix.SERIES, dtype, size, _orjson_dumps(items))
+    else:
+        return "%s%s%d|%s%s" % (prefix.SERIES, dtype, size, name, _orjson_dumps(items))
 
 
 @cython.cfunc
 @cython.inline(True)
-def _serialize_series_complex(values: np.ndarray, size: cython.Py_ssize_t) -> str:
+def _serialize_series_complex(
+    name: object,
+    values: np.ndarray,
+    size: cython.Py_ssize_t,
+) -> str:
     """(cfunc) Serialize `<'pandas.Series'>` to `<'str'>`.
 
     This function is specifically for Series
@@ -1509,12 +1574,19 @@ def _serialize_series_complex(values: np.ndarray, size: cython.Py_ssize_t) -> st
         item = ndarray_getitem_1d(values, i)  # type: ignore
         items.append(complex_getreal(item))
         items.append(complex_getimag(item))
-    return "%s%d%s" % (prefix.SERIES_COMPLEX, size, _orjson_dumps(items))
+    if name is None:
+        return "%s%d%s" % (prefix.SERIES_COMPLEX, size, _orjson_dumps(items))
+    else:
+        return "%s%d|%s%s" % (prefix.SERIES_COMPLEX, size, name, _orjson_dumps(items))
 
 
 @cython.cfunc
 @cython.inline(True)
-def _serialize_series_bytes(values: np.ndarray, size: cython.Py_ssize_t) -> str:
+def _serialize_series_bytes(
+    name: object,
+    values: np.ndarray,
+    size: cython.Py_ssize_t,
+) -> str:
     """(cfunc) Serialize `<'pandas.Series'>` to `<'str'>`.
 
     This function is specifically for Series
@@ -1528,41 +1600,11 @@ def _serialize_series_bytes(values: np.ndarray, size: cython.Py_ssize_t) -> str:
         # items:      IS3{["1","2","3"]}
         return 'IS3["1","2","3"]'
     """
-    items = [bytes_decode_utf8(ndarray_getitem_1d(values, i)) for i in range(size)]  # type: ignore
-    return "%s%d%s" % (prefix.SERIES_BYTES, size, _orjson_dumps(items))
-
-
-@cython.cfunc
-@cython.inline(True)
-def _serialize_series_object(values: np.ndarray, size: cython.Py_ssize_t) -> str:
-    """(cfunc) Serialize `<'pandas.Series'>` to `<'str'>`.
-
-    This function is specifically for Series
-    with dtype of: "O" (object).
-
-    ### Example:
-    >>> obj = pandas.Series([1, 1.234, True, "abc", 1 + 1j])
-        # identifier: {I}O5[i1,f1.234,o1,s3|abc,c1.0|1.0,]
-        # dtype:      I{O}5[i1,f1.234,o1,s3|abc,c1.0|1.0,]
-        # ser size:   IO{5}[i1,f1.234,o1,s3|abc,c1.0|1.0,]
-        # items:      IO5{[i1,f1.234,o1,s3|abc,c1.0|1.0,]}
-        return 'IO5[i1,f1.234,o1,s3|abc,c1.0|1.0,]'
-
-    ### Notes:
-    - 1. Different from other dtypes, [items] section for object
-         does not use 'orjson.dumps' for serialization. Instead,
-         it performs custom serialization similar to a list.
-    - 2. Empty Series, returns 'IO1|0[]'.
-    - 3. Non-empty Series, [items] section always end with a
-         comma followed by the closing bracket `',]'`.
-    """
-    # Empty Series
-    if size == 0:  # 'IO1|0[]'
-        return "%s0[]" % prefix.SERIES_OBJECT
-
-    # Serialize Series[object]
-    items = [_serialize_common_type(ndarray_getitem_1d(values, i)) for i in range(size)]  # type: ignore
-    return "%s%d[%s,]" % (prefix.SERIES_OBJECT, size, ",".join(items))
+    items = [decode_bytes(ndarray_getitem_1d(values, i)) for i in range(size)]  # type: ignore
+    if name is None:
+        return "%s%d%s" % (prefix.SERIES_BYTES, size, _orjson_dumps(items))
+    else:
+        return "%s%d|%s%s" % (prefix.SERIES_BYTES, size, name, _orjson_dumps(items))
 
 
 # Pandas DataFrame ------------------------------------------------------------------
@@ -1616,51 +1658,61 @@ def _serialize_dataframe(obj: DataFrame) -> str:
         dtype: cython.Py_UCS4 = values.descr.kind
         # . `<object>`
         if dtype == prefix.NDARRAY_DTYPE_OBJECT_ID:
-            val = _serialize_dataframe_object(values, rows)
+            v = _serialize_dataframe_object(values, rows)
         # . `<'float'>`
         elif dtype == prefix.NDARRAY_DTYPE_FLOAT_ID:
             if np.PyArray_TYPE(values) == np.NPY_TYPES.NPY_FLOAT16:
                 values = np.PyArray_Cast(values, np.NPY_TYPES.NPY_FLOAT32)
-            val = _serialize_dataframe_common(values, rows, prefix.DATAFRAME_COL_FLOAT)
+            v = _serialize_dataframe_common(values, rows, prefix.DATAFRAME_COL_FLOAT)
         # . `<'int'>`
         elif dtype == prefix.NDARRAY_DTYPE_INT_ID:
-            val = _serialize_dataframe_common(values, rows, prefix.DATAFRAME_COL_INT)
+            v = _serialize_dataframe_common(values, rows, prefix.DATAFRAME_COL_INT)
         # . `<uint>`
         elif dtype == prefix.NDARRAY_DTYPE_UINT_ID:
-            val = _serialize_dataframe_common(values, rows, prefix.DATAFRAME_COL_UINT)
+            v = _serialize_dataframe_common(values, rows, prefix.DATAFRAME_COL_UINT)
         # . `<'bool'>`
         elif dtype == prefix.NDARRAY_DTYPE_BOOL_ID:
-            val = _serialize_dataframe_bool(values, rows)
+            v = _serialize_dataframe_bool(values, rows)
         # . `<datetime64>`
         elif dtype == prefix.NDARRAY_DTYPE_DT64_ID:
-            val = _serialize_dataframe_dt64td64(values, rows, True)
+            v = _serialize_dataframe_dt64td64(values, rows, True)
         # . `<timedelta64>`
         elif dtype == prefix.NDARRAY_DTYPE_TD64_ID:
-            val = _serialize_dataframe_dt64td64(values, rows, False)
+            v = _serialize_dataframe_dt64td64(values, rows, False)
         # . `<'complex'>`
         elif dtype == prefix.NDARRAY_DTYPE_COMPLEX_ID:
-            val = _serialize_dataframe_complex(values, rows)
+            v = _serialize_dataframe_complex(values, rows)
         # . `<'bytes'>`
         elif dtype == prefix.NDARRAY_DTYPE_BYTES_ID:
-            val = _serialize_dataframe_bytes(values, rows)
+            v = _serialize_dataframe_bytes(values, rows)
         # . `<'str'>`
         elif dtype == prefix.NDARRAY_DTYPE_UNICODE_ID:
-            val = _serialize_dataframe_common(
-                values, rows, prefix.DATAFRAME_COL_UNICODE
-            )
+            v = _serialize_dataframe_common(values, rows, prefix.DATAFRAME_COL_UNICODE)
         # . invalid dtype
         else:
             raise errors.SerializeTypeError(
-                "<Serializor> Failed to serialize <'pandas.DataFrame'>: "
+                "<'Serializor'>\nFailed to serialize <'pandas.DataFrame'>: "
                 "unsupported column (Series) dtype [%s]." % col.dtype
             )
-        vals.append(val)
+        vals.append(v)
 
     # Fromat serialization
     # fmt: off
     return "%s%d|%d%s[%s,]" % (
         prefix.DATAFRAME, rows, cols_len, cols_str, ",".join(vals))
     # fmt: on
+
+
+@cython.cfunc
+@cython.inline(True)
+def _serialize_dataframe_object(values: np.ndarray, rows: cython.Py_ssize_t) -> str:
+    """(cfunc) Serialize `<'pandas.DataFrame'>` column to `<'str'>`.
+
+    This function is specifically for DataFrame columns
+    with dtype of: "O" (object).
+    """
+    items = [_serialize_common_type(ndarray_getitem_1d(values, i)) for i in range(rows)]  # type: ignore
+    return "%s[%s,]" % (prefix.DATAFRAME_COL_OBJECT, ",".join(items))
 
 
 @cython.cfunc
@@ -1735,20 +1787,8 @@ def _serialize_dataframe_bytes(values: np.ndarray, rows: cython.Py_ssize_t) -> s
     This function is specifically for DataFrame columns
     with dtype of: "S" (bytes string).
     """
-    items = [bytes_decode_utf8(ndarray_getitem_1d(values, i)) for i in range(rows)]  # type: ignore
+    items = [decode_bytes(ndarray_getitem_1d(values, i)) for i in range(rows)]  # type: ignore
     return prefix.DATAFRAME_COL_COMPLEX + _orjson_dumps(items)
-
-
-@cython.cfunc
-@cython.inline(True)
-def _serialize_dataframe_object(values: np.ndarray, rows: cython.Py_ssize_t) -> str:
-    """(cfunc) Serialize `<'pandas.DataFrame'>` column to `<'str'>`.
-
-    This function is specifically for DataFrame columns
-    with dtype of: "O" (object).
-    """
-    items = [_serialize_common_type(ndarray_getitem_1d(values, i)) for i in range(rows)]  # type: ignore
-    return "%s[%s,]" % (prefix.DATAFRAME_COL_OBJECT, ",".join(items))
 
 
 # Pandas Datetime/Timedelta Index ---------------------------------------------------
@@ -1771,11 +1811,12 @@ def _serialize_datetime_index(obj: DatetimeIndex) -> str:
       converted to UTC time after serialization and the timezone
       information will be `LOST`.
     """
-    # Get Series values & length
+    # Get Index name & values & size
+    name: object = obj.name
     values: np.ndarray = obj.values
     size: cython.Py_ssize_t = values.shape[0]
     # Serialize DatetimeIndex
-    return prefix.DATETIMEINDEX + _serialize_series_dt64td64(values, size, True)
+    return prefix.DATETIMEINDEX + _serialize_series_dt64td64(name, values, size, True)
 
 
 @cython.cfunc
@@ -1792,11 +1833,12 @@ def _serialize_timedelta_index(obj: TimedeltaIndex) -> str:
         # items:      XImns2{[86400000000000,172800000000000]}
         return XImns2[86400000000000,172800000000000]
     """
-    # Get Series values & length
+    # Get Index name & values & size
+    name: object = obj.name
     values: np.ndarray = obj.values
     size: cython.Py_ssize_t = values.shape[0]
     # Serialize TimedeltaIndex
-    return prefix.TIMEDELTAINDEX + _serialize_series_dt64td64(values, size, False)
+    return prefix.TIMEDELTAINDEX + _serialize_series_dt64td64(name, values, size, False)
 
 
 # Serialize -------------------------------------------------------------------------
@@ -1881,56 +1923,51 @@ def _serialize_uncommon_type(obj: object, dtype: type) -> str:
     ##### Uncommon Types #####
     # Basic Types
     # . <'numpy.float_'>
-    if (
-        dtype is typeref.NP_FLOAT64
-        or dtype is typeref.NP_FLOAT32
-        or dtype is typeref.NP_FLOAT16
-    ):
+    if dtype is typeref.FLOAT64 or dtype is typeref.FLOAT32 or dtype is typeref.FLOAT16:
         return _serialize_float64(obj)
     # . <'numpy.int_'>
     if (
-        dtype is typeref.NP_INT64
-        or dtype is typeref.NP_INT32
-        or dtype is typeref.NP_INT16
-        or dtype is typeref.NP_INT8
+        dtype is typeref.INT64
+        or dtype is typeref.INT32
+        or dtype is typeref.INT16
+        or dtype is typeref.INT8
     ):
         return _serialize_int(obj)
     # . <'numpy.uint'>
     if (
-        dtype is typeref.NP_UINT64
-        or dtype is typeref.NP_UINT32
-        or dtype is typeref.NP_UINT16
-        or dtype is typeref.NP_UINT8
+        dtype is typeref.UINT64
+        or dtype is typeref.UINT32
+        or dtype is typeref.UINT16
+        or dtype is typeref.UINT8
     ):
         return _serialize_int(obj)
     # . <'numpy.bool_'>
-    if dtype is typeref.NP_BOOL:
+    if dtype is typeref.BOOL_:
         return _serialize_bool(obj)
     # . <'np.NaN'>
-    if dtype is typeref.NP_NAN:
+    if dtype is typeref.NAN:
         return _serialize_none()
 
     # Date&Time Types
     # . <'pandas.Timestamp'>
-    if dtype is typeref.PD_TIMESTAMP:
+    if dtype is typeref.TIMESTAMP:
         return _serialize_datetime(obj)
     # . <'time.struct_time'>`
     if dtype is typeref.STRUCT_TIME:
         return _serialize_struct_time(obj)
     # . <'pandas.Timedelta'>`
-    if dtype is typeref.PD_TIMEDELTA:
+    if dtype is typeref.TIMEDELTA:
         return _serialize_timedelta(obj)
+    # . <'cytimes.pydt'>
+    if dtype is typeref.PYDT:
+        return _serialize_datetime(obj.dt)
 
     # Numeric Types
     # . <'decimal.Decimal'>
     if dtype is typeref.DECIMAL:
         return _serialize_decimal(obj)
     # . <'complex'>
-    if (
-        dtype is complex
-        or dtype is typeref.NP_COMPLEX64
-        or dtype is typeref.NP_COMPLEX128
-    ):
+    if dtype is complex or dtype is typeref.COMPLEX64 or dtype is typeref.COMPLEX128:
         return _serialize_complex(obj)
 
     # Bytes Types
@@ -1944,7 +1981,7 @@ def _serialize_uncommon_type(obj: object, dtype: type) -> str:
     if dtype is memoryview:
         return _serialize_memoryview(obj)
     # . <'numpy.bytes_'>
-    if dtype is typeref.NP_BYTES:
+    if dtype is typeref.BYTES_:
         return _serialize_bytes(obj)
 
     # Sequence Types
@@ -1960,31 +1997,34 @@ def _serialize_uncommon_type(obj: object, dtype: type) -> str:
 
     # Numpy Types
     # . <'numpy.datetime64'>
-    if dtype is typeref.NP_DATETIME64:
+    if dtype is typeref.DATETIME64:
         return _serialize_datetime64(obj)
     # . <'numpy.timedelta64'>
-    if dtype is typeref.NP_TIMEDELTA64:
+    if dtype is typeref.TIMEDELTA64:
         return _serialize_timedelta64(obj)
     # . <'numpy.ndarray'>
-    if dtype is typeref.NP_NDARRAY:
+    if dtype is np.ndarray:
         return _serialize_ndarray(obj)
     # . <'numpy.record'>
-    if dtype is typeref.NP_RECORD:
+    if dtype is typeref.RECORD:
         return _serialize_sequence(obj, prefix.LIST)
 
     # Pandas Types
     # . <'pandas.Series'>
-    if dtype is typeref.PD_SERIES:
+    if dtype is typeref.SERIES:
         return _serialize_series(obj)
     # . <'pandas.DataFrame'>
-    if dtype is typeref.PD_DATAFRAME:
+    if dtype is typeref.DATAFRAME:
         return _serialize_dataframe(obj)
     # . <'pandas.DatetimeIndex'>
-    if dtype is typeref.PD_DATETIMEINDEX:
+    if dtype is typeref.DATETIMEINDEX:
         return _serialize_datetime_index(obj)
     # . <'pandas.TimedeltaIndex'>
-    if dtype is typeref.PD_TIMEDELTAINDEX:
+    if dtype is typeref.TIMEDELTAINDEX:
         return _serialize_timedelta_index(obj)
+    # . <'cytimes.pddt'>
+    if dtype is typeref.PDDT:
+        return _serialize_series(obj.dt)
 
     ##### Subclass Types #####
     return _serialize_subclass(obj, dtype)
@@ -2026,6 +2066,9 @@ def _serialize_subclass(obj: object, dtype: type) -> str:
     # . subclass of `<'datetime.timedelta'>`
     if isinstance(obj, datetime.timedelta):
         return _serialize_timedelta(obj)
+    # . subclass of `<'cytimes.pydt'>`
+    if isinstance(obj, typeref.PYDT):
+        return _serialize_datetime(obj.dt)
 
     # Numeric Types
     # . subclass of `<'decimal.Decimal'>`
@@ -2056,13 +2099,13 @@ def _serialize_subclass(obj: object, dtype: type) -> str:
 
     # Invalid Data Type
     raise errors.SerializeTypeError(
-        "<Serializor> Failed to serialize %s: unsupported data type." % dtype
+        "<'Serializor'>\nFailed to serialize %s: unsupported data type." % dtype
     )
 
 
-@cython.cfunc
-def capi_serialize(obj: object) -> str:
-    """(cfunc) Serialize Python object to `<'str'>`.
+@cython.ccall
+def serialize(obj: object) -> str:
+    """Serialize Python object to `<'str'>`.
 
     Support most of the common Python types and some
     less common types, such as: complex, Decimal, numpy,
@@ -2078,19 +2121,5 @@ def capi_serialize(obj: object) -> str:
         raise
     except Exception as err:
         raise errors.SerializeError(
-            "<Serializor> Failed to serialize: %s.\nError: %s" % (type(obj), err)
+            "<'Serializor'>\nFailed to serialize: %s.\nError: %s" % (type(obj), err)
         ) from err
-
-
-def serialize(obj: object) -> str:
-    """Serialize Python object to `<'str'>`.
-
-    Support most of the common Python types and some
-    less common types, such as: complex, Decimal, numpy,
-    pandas, etc.
-
-    The serialized result should only be deserialized by
-    the `deserialize()` function in this package, which will
-    re-create the Python object from the serialized string.
-    """
-    return capi_serialize(obj)

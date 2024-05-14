@@ -7,9 +7,6 @@ from serializor cimport serialize
 
 # Constants
 cdef:
-    # . characters
-    Py_UCS4 CHAR_QUOTE, CHAR_COMMA, CHAR_ONE, CHAR_BACKSLASH
-    Py_UCS4 CHAR_PIPE, CHAR_OPEN_BRACKET, CHAR_CLOSE_BRACKET
     # . functions
     object FN_ORJSON_LOADS, FN_NUMPY_EMPTY
 
@@ -22,17 +19,21 @@ ctypedef struct shape:
     Py_ssize_t l
     Py_ssize_t loc
 
+ctypedef struct sinfo:
+    Py_ssize_t size
+    Py_ssize_t name
+
 # Utils
 cdef inline object slice_to_bytes(str data, Py_ssize_t start, Py_ssize_t end):
-    """Slice data (str) from 'start' to 'end', and convert to `<bytes>`."""
-    return serialize.bytes_encode_utf8(PyUnicode_Substring(data, start, end))
+    """Slice data `<'str'>` from 'start' to 'end', and convert to `<'bytes'>`."""
+    return serialize.encode_str(PyUnicode_Substring(data, start, end))
 
 cdef inline unicode slice_to_unicode(str data, Py_ssize_t start, Py_ssize_t end):
-    """Slice data (str) from 'start' to 'end', and convert to `<unicode>`."""
+    """Slice data `<'str'>` from 'start' to 'end', and convert to `<'unicode'>`."""
     return PyUnicode_Substring(data, start, end)
 
 cdef inline double slice_to_float(str data, Py_ssize_t start, Py_ssize_t end):
-    """Slice data (str) from 'start' to 'end', and convert to `<double>`."""
+    """Slice data `<'str'>` from 'start' to 'end', and convert to `<'double'>`."""
     # Calculate the size of the token.
     cdef Py_ssize_t size = end - start
     # Allocate memory for the slice.
@@ -53,7 +54,7 @@ cdef inline double slice_to_float(str data, Py_ssize_t start, Py_ssize_t end):
         free(buffer)
 
 cdef inline long long slice_to_int(str data, Py_ssize_t start, Py_ssize_t end):
-    """Slice data (str) from 'start' to 'end', and convert to `<long long>`."""
+    """Slice data `<'str'>` from 'start' to 'end', and convert to `<'long long'>`."""
     # Calculate the size of the token.
     cdef Py_ssize_t size = end - start
     # Allocate memory for the slice.
@@ -74,60 +75,64 @@ cdef inline long long slice_to_int(str data, Py_ssize_t start, Py_ssize_t end):
         free(buffer)
 
 cdef inline Py_ssize_t find_data_separator(str data, Py_ssize_t start, Py_ssize_t end) except -1:
-    """Find the next data separator `'|'` and returns its position `<Py_ssize_t>`."""
+    """Find the next data separator `'|'` and returns its position `<'Py_ssize_t'>`."""
     cdef Py_ssize_t loc = start
     while loc < end:
-        if read_char(data, loc) == CHAR_PIPE:
+        if read_char(data, loc) == "|":
             return loc
         loc += 1
     raise ValueError(
-        "Failed to locate the next data separator '|' "
-        "from:\n'%s'" % slice_to_unicode(data, start, end) )
+        "Failed to locate the next data separator '|' from:\n'%s'" 
+        % slice_to_unicode(data, start, end) 
+    )
 
 cdef inline Py_ssize_t find_item_separator(str data, Py_ssize_t start, Py_ssize_t end) except -1:
-    """Find the next item separator `','` and returns its position `<Py_ssize_t>`."""
+    """Find the next item separator `','` and returns its position `<'Py_ssize_t'>`."""
     cdef Py_ssize_t loc = start
     while loc < end:
-        if read_char(data, loc) == CHAR_COMMA:
+        if read_char(data, loc) == ",":
             return loc
         loc += 1
     raise ValueError(
-        "Failed to locate the next item separator ',' "
-        "from:\n'%s'" % slice_to_unicode(data, start, end) )
+        "Failed to locate the next item separator ',' from:\n'%s'" 
+        % slice_to_unicode(data, start, end) 
+    )
 
 cdef inline Py_ssize_t find_open_bracket(str data, Py_ssize_t start, Py_ssize_t end) except -1:
-    """Find the next open bracket `'['` and returns its position `<Py_ssize_t>`."""
+    """Find the next open bracket `'['` and returns its position `<'Py_ssize_t'>`."""
     cdef Py_ssize_t loc = start
     while loc < end:
-        if read_char(data, loc) == CHAR_OPEN_BRACKET:
+        if read_char(data, loc) == "[":
             return loc
         loc += 1
     raise ValueError(
-        "Failed to locate the next open bracket '[' "
-        "from:\n'%s'" % slice_to_unicode(data, start, end) )
+        "Failed to locate the next open bracket '[' from:\n'%s'" 
+        % slice_to_unicode(data, start, end) 
+    )
 
 cdef inline Py_ssize_t find_close_bracket(str data, Py_ssize_t start, Py_ssize_t end) except -1:
-    """Find the next close bracket `']'` and returns its position `<Py_ssize_t>`."""
-    cdef Py_ssize_t loc = PyUnicode_FindChar(data, CHAR_CLOSE_BRACKET, start, end, 1)
+    """Find the next close bracket `']'` and returns its position `<'Py_ssize_t'>`."""
+    cdef Py_ssize_t loc = PyUnicode_FindChar(data, "]", start, end, 1)
     if loc < 0:
         raise ValueError(
-            "Failed to locate the next close bracket ']' "
-            "from:\n'%s'" % slice_to_unicode(data, start, end) )
+            "Failed to locate the next close bracket ']' from:\n'%s'" 
+            % slice_to_unicode(data, start, end) 
+    )
     return loc
 
 cdef inline Py_ssize_t find_close_bracketq(str data, Py_ssize_t start, Py_ssize_t end) except -1:
     """Find the next close bracket `']'` that is preceded by a non-escaped `'"'` 
-    and returns its position `<Py_ssize_t>`."""
+    and returns its position `<'Py_ssize_t'>`."""
     cdef Py_ssize_t loc = start
     while loc < end:
         # Find closing bracket ']'.
-        loc = PyUnicode_FindChar(data, CHAR_CLOSE_BRACKET, loc, end, 1)
+        loc = PyUnicode_FindChar(data, "]", loc, end, 1)
         if loc < 0:
             break # not found
         # Ensure it is preceded by a non-escaped '"'.
         if (
-            read_char(data, loc - 1) == CHAR_QUOTE  # '"]"
-            and read_char(data, loc - 2) != CHAR_BACKSLASH  # '"]'
+            read_char(data, loc - 1) == '"'  # '"]"
+            and read_char(data, loc - 2) != "\\"  # not '\"]'
         ):
             return loc # exit
         # Continue searching.
@@ -135,8 +140,9 @@ cdef inline Py_ssize_t find_close_bracketq(str data, Py_ssize_t start, Py_ssize_
     # Not found.
     raise ValueError(
         "Failed to locate the next close bracket ']' "
-        "that is preceded by a non-escaped '\"' "
-        "from:\n%s" % slice_to_unicode(data, start, end) )
+        "that is preceded by a non-escaped '\"' from:\n%s" 
+        % slice_to_unicode(data, start, end) 
+    )
 
 # Deserialize
-cdef object capi_deserialize(str obj)
+cpdef object deserialize(str obj)

@@ -9,6 +9,7 @@ from cython.cimports.cpython.unicode import PyUnicode_READ_CHAR as read_char  # 
 from cython.cimports.cpython.unicode import PyUnicode_FromOrdinal as str_fr_ucs4  # type: ignore
 
 np.import_array()
+np.import_umath()
 
 # Python imports
 import numpy as np

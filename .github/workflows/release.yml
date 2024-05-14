@@ -8,7 +8,8 @@ jobs:
     name: Build wheels on ${{matrix.arch}} for ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     env:
-      CIBW_SKIP: "cp27-* cp34-* cp35-* pp27-* cp36-musllinux_aarch64 cp36-manylinux_aarch64 pp37-manylinux_aarch64 *-win32 *_i686 pp3*"
+      CIBW_SKIP: "pp3* cp27-* cp34-* cp35-* cp36-musllinux_aarch64 cp36-manylinux_aarch64 pp27-* pp37-manylinux_aarch64 *_i686"
+      # CIBW_SKIP: "cp27-* cp34-* cp35-* pp27-* cp36-musllinux_aarch64 cp36-manylinux_aarch64 pp37-manylinux_aarch64 *-win32 *_i686 pp3*"
       CIBW_BEFORE_BUILD: "pip install Cython==3.0.10"
     strategy:
       matrix:
@@ -17,11 +18,11 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Setup QEMU
@@ -37,7 +38,7 @@ jobs:
         run: |
           python -m cibuildwheel --output-dir wheelhouse
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: ./wheelhouse/*.whl
           retention-days: 1
@@ -49,11 +50,11 @@ jobs:
       CIBW_SKIP: "cp27-* cp34-* pp27-* cp35-*"
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: true
       - name: Install Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
       - name: Install Build Tools
@@ -64,7 +65,7 @@ jobs:
         run: |
           python -m build --sdist --outdir dist
       - name: Upload Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           path: dist/*.tar.gz
           retention-days: 1

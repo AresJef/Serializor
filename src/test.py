@@ -16,7 +16,7 @@ def diff(base_t: float, comp_t: float) -> str:
         res = (comp_t - base_t) / base_t
     else:
         res = -(base_t - comp_t) / comp_t
-    return f"+{res:.3f}x" if res >= 0 else f"{res:.3f}x"
+    return ("" if res < 0 else "+") + f"{res:.6f}x"
 
 
 def benchmark_simple_object(
@@ -334,7 +334,7 @@ def benchmark_dataframe(
     print()
 
 
-if __name__ == "__main__":
+def benchmark() -> None:
     timeit(lambda: orjson_dumps(1024), number=1_000_000)
 
     run_basic_types = 1
@@ -786,6 +786,10 @@ if __name__ == "__main__":
         eq = obj == de
         print(" - Crypto EQUALS:", eq)
         assert obj == de
+
+
+if __name__ == "__main__":
+    benchmark()
 
     # ---------------------------------------------------------------------------------------------------
     if False:

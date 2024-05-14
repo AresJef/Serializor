@@ -1,7 +1,7 @@
 # cython: language_level=3
 
 # Encrypt
-cdef bytes capi_encrypt(object obj, object key)
+cpdef bytes encrypt(object obj, object key)
 
 # Decrypt
-cdef object capi_decrypt(bytes enc, object key)
+cpdef object decrypt(bytes enc, object key)

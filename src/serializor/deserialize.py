@@ -14,6 +14,7 @@ from cython.cimports.cpython.complex import PyComplex_FromDoubles as gen_complex
 from cython.cimports.serializor import prefix, serialize, typeref  # type: ignore
 
 np.import_array()
+np.import_umath()
 datetime.import_datetime()
 
 # Python imports
@@ -23,14 +24,6 @@ from orjson import loads
 from serializor import prefix, serialize, typeref, errors
 
 # Constants -------------------------------------------------------------------------
-# . characters
-CHAR_QUOTE: cython.Py_UCS4 = 34  # `"`
-CHAR_COMMA: cython.Py_UCS4 = 44  # `,`
-CHAR_ONE: cython.Py_UCS4 = 49  # `1`
-CHAR_BACKSLASH: cython.Py_UCS4 = 92  # `\`
-CHAR_PIPE: cython.Py_UCS4 = 124  # `|`
-CHAR_OPEN_BRACKET: cython.Py_UCS4 = 91  # `[`
-CHAR_CLOSE_BRACKET: cython.Py_UCS4 = 93  # `]`
 # . functions
 FN_ORJSON_LOADS: Callable = loads
 FN_NUMPY_EMPTY: Callable = np.empty
@@ -132,7 +125,7 @@ def _deserialize_bool(data: str, idx: cython.Py_ssize_t) -> object:
         # Ended loc: ...o{1}...
         return True
     """
-    return read_char(data, idx + 1) == CHAR_ONE  # type: ignore
+    return read_char(data, idx + 1) == "1"  # type: ignore
 
 
 # Date&Time Types -------------------------------------------------------------------
@@ -343,7 +336,7 @@ def _deserialize_datetime64(
         unit = slice_to_unicode(data, idx + 1, sep)  # type: ignore
         val = slice_to_int(data, sep, loc)  # type: ignore
     # Generate datetime64
-    return typeref.NP_DATETIME64(val, unit)
+    return typeref.DATETIME64(val, unit)
 
 
 @cython.cfunc
@@ -376,7 +369,7 @@ def _deserialize_timedelta64(
         unit = slice_to_unicode(data, idx + 1, sep)  # type: ignore
         val = slice_to_int(data, sep, loc)  # type: ignore
     # Generate timedelta64
-    return typeref.NP_TIMEDELTA64(val, unit)
+    return typeref.TIMEDELTA64(val, unit)
 
 
 # Mapping Types ---------------------------------------------------------------------
@@ -521,48 +514,135 @@ def _deserialize_ndarray(
     # Deserialize ndarray
     # . ndarray[object]
     if dtype == prefix.NDARRAY_DTYPE_OBJECT_ID:
-        arr = _deserialize_ndarray_object(data, pos)
+        return _deserialize_ndarray_object(data, pos)
     # . ndarray[float]
-    elif dtype == prefix.NDARRAY_DTYPE_FLOAT_ID:
-        arr = _deserialize_ndarray_common(data, pos, item, np.NPY_TYPES.NPY_FLOAT64)
+    if dtype == prefix.NDARRAY_DTYPE_FLOAT_ID:
+        return _deserialize_ndarray_common(data, pos, item, np.NPY_TYPES.NPY_FLOAT64)
     # . ndarray[int]
-    elif dtype == prefix.NDARRAY_DTYPE_INT_ID:
-        arr = _deserialize_ndarray_common(data, pos, item, np.NPY_TYPES.NPY_INT64)
+    if dtype == prefix.NDARRAY_DTYPE_INT_ID:
+        return _deserialize_ndarray_common(data, pos, item, np.NPY_TYPES.NPY_INT64)
     # . ndarray[uint]
-    elif dtype == prefix.NDARRAY_DTYPE_UINT_ID:
-        arr = _deserialize_ndarray_common(data, pos, item, np.NPY_TYPES.NPY_UINT64)
+    if dtype == prefix.NDARRAY_DTYPE_UINT_ID:
+        return _deserialize_ndarray_common(data, pos, item, np.NPY_TYPES.NPY_UINT64)
     # . ndarray[bool]
-    elif dtype == prefix.NDARRAY_DTYPE_BOOL_ID:
-        arr = _deserialize_ndarray_common(data, pos, item, np.NPY_TYPES.NPY_BOOL)
+    if dtype == prefix.NDARRAY_DTYPE_BOOL_ID:
+        return _deserialize_ndarray_common(data, pos, item, np.NPY_TYPES.NPY_BOOL)
     # . ndarray[datetime64]
-    elif dtype == prefix.NDARRAY_DTYPE_DT64_ID:
-        arr = _deserialize_ndarray_dt64td64(data, pos, item, True)
+    if dtype == prefix.NDARRAY_DTYPE_DT64_ID:
+        return _deserialize_ndarray_dt64td64(data, pos, item, True)
     # . ndarray[timedelta64]
-    elif dtype == prefix.NDARRAY_DTYPE_TD64_ID:
-        arr = _deserialize_ndarray_dt64td64(data, pos, item, False)
+    if dtype == prefix.NDARRAY_DTYPE_TD64_ID:
+        return _deserialize_ndarray_dt64td64(data, pos, item, False)
     # . ndarray[complex]
-    elif dtype == prefix.NDARRAY_DTYPE_COMPLEX_ID:
-        arr = _deserialize_ndarray_complex(data, pos, item)
+    if dtype == prefix.NDARRAY_DTYPE_COMPLEX_ID:
+        return _deserialize_ndarray_complex(data, pos, item)
     # . ndarray[bytes]
-    elif dtype == prefix.NDARRAY_DTYPE_BYTES_ID:
-        arr = np.PyArray_Cast(
-            _deserialize_ndarray_bytes(data, pos, item), np.NPY_TYPES.NPY_STRING
-        )
+    if dtype == prefix.NDARRAY_DTYPE_BYTES_ID:
+        return _deserialize_ndarray_bytes(data, pos, item)
     # . ndarray[str]
-    elif dtype == prefix.NDARRAY_DTYPE_UNICODE_ID:
-        arr = np.PyArray_Cast(
-            _deserialize_ndarray_common(data, pos, item, np.NPY_TYPES.NPY_OBJECT),
-            np.NPY_TYPES.NPY_UNICODE,
-        )
+    if dtype == prefix.NDARRAY_DTYPE_UNICODE_ID:
+        return _deserialize_ndarray_unicode(data, pos, item)
     # . unrecognized dtype
-    else:
-        raise errors.DeserializeValueError(
-            "<Serializor> Failed to deserialize 'data': "
-            "unsupported <'numpy.ndarray'> dtype '%s'." % str_fr_ucs4(dtype)
-        )
+    raise errors.DeserializeValueError(
+        "<'Serializor'>\nFailed to deserialize 'data': "
+        "unsupported <'numpy.ndarray'> dtype '%s'." % str_fr_ucs4(dtype)
+    )
 
-    # Return ndarray
-    return arr
+
+@cython.cfunc
+@cython.inline(True)
+def _deserialize_ndarray_object(data: str, pos: cython.Py_ssize_t[2]) -> object:
+    """(cfunc) Deserialize numpy.ndarray token
+    of the 'data' to `<'ndarray[object]'>`.
+
+    This function is specifically for ndarray
+    with dtype of: "O" (object).
+
+    ### Example:
+    >>> '...NO1|5[i1,f1.234,o1,"abc",c1.0|1.0,]...'
+        return numpy.array([1, 1.234, True, "abc", 1 + 1j], dtype="O")
+    """
+    # Parse ndarray shape
+    shape = _parse_ndarray_shape(data, pos[0] + 2, pos[1])
+    ndim: cython.Py_ssize_t = shape.ndim
+    idx: cython.Py_ssize_t = shape.loc  # 'NO1|0{[}....]'
+    arr: np.ndarray
+
+    # Deserialize: 1-dimensional
+    if ndim == 1:
+        dim1: np.npy_intp[1] = [shape.i]
+        arr = np.PyArray_EMPTY(1, dim1, np.NPY_TYPES.NPY_OBJECT, 0)
+        # . empty ndarray: 'NO1|0[]'
+        if shape.i == 0:
+            pos[0] = idx + 3  # skip '[]' & ','
+            return arr
+        # . deserialize: ndarray
+        pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
+        for i in range(shape.i):
+            serialize.ndarray_setitem_1d(arr, i, _deserialize_item(data, pos))
+        pos[0] += 2  # skip the ending ']' & ','
+        return arr
+
+    # Deserialize: 2-dimensional
+    if ndim == 2:
+        dim2: np.npy_intp[2] = [shape.i, shape.j]
+        arr = np.PyArray_EMPTY(2, dim2, np.NPY_TYPES.NPY_OBJECT, 0)
+        # . empty ndarray: 'NO2|i|0[]'
+        if shape.j == 0:
+            pos[0] = idx + 3  # skip '[]' & ','
+            return arr
+        # . deserialize: ndarray
+        pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
+        for i in range(shape.i):
+            for j in range(shape.j):
+                serialize.ndarray_setitem_2d(arr, i, j, _deserialize_item(data, pos))
+        pos[0] += 2  # skip the ending ']' & ','
+        return arr
+
+    # Deserialize: 3-dimensional
+    if ndim == 3:
+        dim3: np.npy_intp[3] = [shape.i, shape.j, shape.k]
+        arr = np.PyArray_EMPTY(3, dim3, np.NPY_TYPES.NPY_OBJECT, 0)
+        # . empty ndarray: 'NO3|i|j|0[]'
+        if shape.k == 0:
+            pos[0] = idx + 3  # skip '[]' & ','
+            return arr
+        # . deserialize: ndarray
+        pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
+        for i in range(shape.i):
+            for j in range(shape.j):
+                for k in range(shape.k):
+                    serialize.ndarray_setitem_3d(
+                        arr, i, j, k, _deserialize_item(data, pos)
+                    )
+        pos[0] += 2  # skip the ending ']' & ','
+        return arr
+
+    # Deserialize: 4-dimensional
+    if ndim == 4:
+        dim4: np.npy_intp[4] = [shape.i, shape.j, shape.k, shape.l]
+        arr = np.PyArray_EMPTY(4, dim4, np.NPY_TYPES.NPY_OBJECT, 0)
+        # . empty ndarray: 'NO4|i|j|k|0[]'
+        if shape.l == 0:
+            pos[0] = idx + 3  # skip '[]' & ','
+            return arr
+        # . deserialize: ndarray
+        pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
+        for i in range(shape.i):
+            for j in range(shape.j):
+                for k in range(shape.k):
+                    for l in range(shape.l):
+                        serialize.ndarray_setitem_4d(
+                            arr, i, j, k, l, _deserialize_item(data, pos)
+                        )
+        pos[0] += 2  # skip the ending ']' & ','
+        return arr
+
+    # Invalid dimension
+    raise errors.DeserializeValueError(
+        "<'Serializor'>\nFailed to deserialize 'data': "
+        "unsupported <'numpy.ndarray'> dimension [%d]." % ndim
+    )
 
 
 @cython.cfunc
@@ -699,7 +779,7 @@ def _deserialize_ndarray_common(
 
     # Invalid dimension
     raise errors.DeserializeValueError(
-        "<Serializor> Failed to deserialize 'data': "
+        "<'Serializor'>\nFailed to deserialize 'data': "
         "unsupported <'numpy.ndarray'> dimension [%d]." % ndim
     )
 
@@ -829,7 +909,7 @@ def _deserialize_ndarray_dt64td64(
 
     # Invalid dimension
     raise errors.DeserializeValueError(
-        "<Serializor> Failed to deserialize 'data': "
+        "<'Serializor'>\nFailed to deserialize 'data': "
         "unsupported <'numpy.ndarray'> dimension [%d]." % ndim
     )
 
@@ -953,7 +1033,7 @@ def _deserialize_ndarray_complex(
 
     # Invalid dimension
     raise errors.DeserializeValueError(
-        "<Serializor> Failed to deserialize 'data': "
+        "<'Serializor'>\nFailed to deserialize 'data': "
         "unsupported <'numpy.ndarray'> dimension [%d]." % ndim
     )
 
@@ -990,7 +1070,7 @@ def _deserialize_ndarray_bytes(
         # . empty ndarray: 'NS1|0[]'
         if shape.i == 0:
             pos[0] = idx + 3  # skip '[]' & ','
-            return arr
+            return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
         # . find ndarray end
         if not item:
             loc = eof
@@ -999,11 +1079,9 @@ def _deserialize_ndarray_bytes(
         # . deserialize: ndarray
         items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
         for i in range(shape.i):
-            serialize.ndarray_setitem_1d(
-                arr, i, serialize.bytes_encode_utf8(next(items))
-            )
+            serialize.ndarray_setitem_1d(arr, i, serialize.encode_str(next(items)))
         pos[0] = loc + 1  # update position & skip ','
-        return arr
+        return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
 
     # Deserialize: 2-dimensional
     if ndim == 2:
@@ -1012,7 +1090,7 @@ def _deserialize_ndarray_bytes(
         # . empty ndarray: 'NS2|i|0[]'
         if shape.j == 0:
             pos[0] = idx + 3  # skip '[]' & ','
-            return arr
+            return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
         # . find ndarray end
         if not item:
             loc = eof
@@ -1023,10 +1101,10 @@ def _deserialize_ndarray_bytes(
         for i in range(shape.i):
             for j in range(shape.j):
                 serialize.ndarray_setitem_2d(
-                    arr, i, j, serialize.bytes_encode_utf8(next(items))
+                    arr, i, j, serialize.encode_str(next(items))
                 )
         pos[0] = loc + 1  # update position & skip ','
-        return arr
+        return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
 
     # Deserialize: 3-dimensional
     if ndim == 3:
@@ -1035,7 +1113,7 @@ def _deserialize_ndarray_bytes(
         # . empty ndarray: 'NS3|i|j|0[]'
         if shape.k == 0:
             pos[0] = idx + 3  # skip '[]' & ','
-            return arr
+            return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
         # . find ndarray end
         if not item:
             loc = eof
@@ -1047,10 +1125,10 @@ def _deserialize_ndarray_bytes(
             for j in range(shape.j):
                 for k in range(shape.k):
                     serialize.ndarray_setitem_3d(
-                        arr, i, j, k, serialize.bytes_encode_utf8(next(items))
+                        arr, i, j, k, serialize.encode_str(next(items))
                     )
         pos[0] = loc + 1  # update position & skip ','
-        return arr
+        return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
 
     # Deserialize: 4-dimensional
     if ndim == 4:
@@ -1059,7 +1137,7 @@ def _deserialize_ndarray_bytes(
         # . empty ndarray: 'NS4|i|j|k|0[]'
         if shape.l == 0:
             pos[0] = idx + 3  # skip '[]' & ','
-            return arr
+            return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
         # . find ndarray end
         if not item:
             loc = eof
@@ -1072,111 +1150,38 @@ def _deserialize_ndarray_bytes(
                 for k in range(shape.k):
                     for l in range(shape.l):
                         serialize.ndarray_setitem_4d(
-                            arr, i, j, k, l, serialize.bytes_encode_utf8(next(items))
+                            arr, i, j, k, l, serialize.encode_str(next(items))
                         )
         pos[0] = loc + 1  # update position & skip ','
-        return arr
+        return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
 
     # Invalid dimension
     raise errors.DeserializeValueError(
-        "<Serializor> Failed to deserialize 'data': "
+        "<'Serializor'>\nFailed to deserialize 'data': "
         "unsupported <'numpy.ndarray'> dimension [%d]." % ndim
     )
 
 
 @cython.cfunc
 @cython.inline(True)
-def _deserialize_ndarray_object(data: str, pos: cython.Py_ssize_t[2]) -> object:
+def _deserialize_ndarray_unicode(
+    data: str,
+    pos: cython.Py_ssize_t[2],
+    item: cython.bint,
+) -> object:
     """(cfunc) Deserialize numpy.ndarray token
-    of the 'data' to `<'ndarray[object]'>`.
+    of the 'data' to `<'ndarray[str]'>`.
 
     This function is specifically for ndarray
-    with dtype of: "O" (object).
+    with dtype of: "U" (unicode).
 
     ### Example:
-    >>> '...NO1|5[i1,f1.234,o1,"abc",c1.0|1.0,]...'
-        return numpy.array([1, 1.234, True, "abc", 1 + 1j], dtype="O")
+    >>> data = '...NU1|3["1","2","3"]...'
+        return numpy.array(["1", "2", "3"], dtype="U")
     """
-    # Parse ndarray shape
-    shape = _parse_ndarray_shape(data, pos[0] + 2, pos[1])
-    ndim: cython.Py_ssize_t = shape.ndim
-    idx: cython.Py_ssize_t = shape.loc  # 'NO1|0{[}....]'
-    arr: np.ndarray
-
-    # Deserialize: 1-dimensional
-    if ndim == 1:
-        dim1: np.npy_intp[1] = [shape.i]
-        arr = np.PyArray_EMPTY(1, dim1, np.NPY_TYPES.NPY_OBJECT, 0)
-        # . empty ndarray: 'NO1|0[]'
-        if shape.i == 0:
-            pos[0] = idx + 3  # skip '[]' & ','
-            return arr
-        # . deserialize: ndarray
-        pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
-        for i in range(shape.i):
-            serialize.ndarray_setitem_1d(arr, i, _deserialize_item(data, pos))
-        pos[0] += 2  # skip the ending ']' & ','
-        return arr
-
-    # Deserialize: 2-dimensional
-    if ndim == 2:
-        dim2: np.npy_intp[2] = [shape.i, shape.j]
-        arr = np.PyArray_EMPTY(2, dim2, np.NPY_TYPES.NPY_OBJECT, 0)
-        # . empty ndarray: 'NO2|i|0[]'
-        if shape.j == 0:
-            pos[0] = idx + 3  # skip '[]' & ','
-            return arr
-        # . deserialize: ndarray
-        pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
-        for i in range(shape.i):
-            for j in range(shape.j):
-                serialize.ndarray_setitem_2d(arr, i, j, _deserialize_item(data, pos))
-        pos[0] += 2  # skip the ending ']' & ','
-        return arr
-
-    # Deserialize: 3-dimensional
-    if ndim == 3:
-        dim3: np.npy_intp[3] = [shape.i, shape.j, shape.k]
-        arr = np.PyArray_EMPTY(3, dim3, np.NPY_TYPES.NPY_OBJECT, 0)
-        # . empty ndarray: 'NO3|i|j|0[]'
-        if shape.k == 0:
-            pos[0] = idx + 3  # skip '[]' & ','
-            return arr
-        # . deserialize: ndarray
-        pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
-        for i in range(shape.i):
-            for j in range(shape.j):
-                for k in range(shape.k):
-                    serialize.ndarray_setitem_3d(
-                        arr, i, j, k, _deserialize_item(data, pos)
-                    )
-        pos[0] += 2  # skip the ending ']' & ','
-        return arr
-
-    # Deserialize: 4-dimensional
-    if ndim == 4:
-        dim4: np.npy_intp[4] = [shape.i, shape.j, shape.k, shape.l]
-        arr = np.PyArray_EMPTY(4, dim4, np.NPY_TYPES.NPY_OBJECT, 0)
-        # . empty ndarray: 'NO4|i|j|k|0[]'
-        if shape.l == 0:
-            pos[0] = idx + 3  # skip '[]' & ','
-            return arr
-        # . deserialize: ndarray
-        pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
-        for i in range(shape.i):
-            for j in range(shape.j):
-                for k in range(shape.k):
-                    for l in range(shape.l):
-                        serialize.ndarray_setitem_4d(
-                            arr, i, j, k, l, _deserialize_item(data, pos)
-                        )
-        pos[0] += 2  # skip the ending ']' & ','
-        return arr
-
-    # Invalid dimension
-    raise errors.DeserializeValueError(
-        "<Serializor> Failed to deserialize 'data': "
-        "unsupported <'numpy.ndarray'> dimension [%d]." % ndim
+    return np.PyArray_Cast(
+        _deserialize_ndarray_common(data, pos, item, np.NPY_TYPES.NPY_OBJECT),
+        np.NPY_TYPES.NPY_UNICODE,
     )
 
 
@@ -1262,49 +1267,84 @@ def _deserialize_series(
     # Deserialize Series
     # . Series[object]
     if dtype == prefix.NDARRAY_DTYPE_OBJECT_ID:
-        arr = _deserialize_series_object(data, pos)
+        return _deserialize_series_object(data, pos)
     # . Series[float]
-    elif dtype == prefix.NDARRAY_DTYPE_FLOAT_ID:
-        arr = _deserialize_series_common(data, pos, item, np.NPY_TYPES.NPY_FLOAT64)
+    if dtype == prefix.NDARRAY_DTYPE_FLOAT_ID:
+        return _deserialize_series_common(data, pos, item, np.NPY_TYPES.NPY_FLOAT64)
     # . Series[int]
-    elif dtype == prefix.NDARRAY_DTYPE_INT_ID:
-        arr = _deserialize_series_common(data, pos, item, np.NPY_TYPES.NPY_INT64)
+    if dtype == prefix.NDARRAY_DTYPE_INT_ID:
+        return _deserialize_series_common(data, pos, item, np.NPY_TYPES.NPY_INT64)
     # . Series[uint]
-    elif dtype == prefix.NDARRAY_DTYPE_UINT_ID:
-        arr = _deserialize_series_common(data, pos, item, np.NPY_TYPES.NPY_UINT64)
+    if dtype == prefix.NDARRAY_DTYPE_UINT_ID:
+        return _deserialize_series_common(data, pos, item, np.NPY_TYPES.NPY_UINT64)
     # . Series[bool]
-    elif dtype == prefix.NDARRAY_DTYPE_BOOL_ID:
-        arr = _deserialize_series_common(data, pos, item, np.NPY_TYPES.NPY_BOOL)
+    if dtype == prefix.NDARRAY_DTYPE_BOOL_ID:
+        return _deserialize_series_common(data, pos, item, np.NPY_TYPES.NPY_BOOL)
     # . Series[datetime64]
-    elif dtype == prefix.NDARRAY_DTYPE_DT64_ID:
-        arr = _deserialize_series_dt64td64(data, pos, item, True)
+    if dtype == prefix.NDARRAY_DTYPE_DT64_ID:
+        return _deserialize_series_dt64td64(data, pos, item, True, typeref.SERIES)
     # . Series[timedelta64]
-    elif dtype == prefix.NDARRAY_DTYPE_TD64_ID:
-        arr = _deserialize_series_dt64td64(data, pos, item, False)
+    if dtype == prefix.NDARRAY_DTYPE_TD64_ID:
+        return _deserialize_series_dt64td64(data, pos, item, False, typeref.SERIES)
     # . Series[complex]
-    elif dtype == prefix.NDARRAY_DTYPE_COMPLEX_ID:
-        arr = _deserialize_series_complex(data, pos, item)
+    if dtype == prefix.NDARRAY_DTYPE_COMPLEX_ID:
+        return _deserialize_series_complex(data, pos, item)
     # . Series[bytes]
-    elif dtype == prefix.NDARRAY_DTYPE_BYTES_ID:
-        arr = np.PyArray_Cast(
-            _deserialize_series_bytes(data, pos, item),
-            np.NPY_TYPES.NPY_STRING,
-        )
+    if dtype == prefix.NDARRAY_DTYPE_BYTES_ID:
+        return _deserialize_series_bytes(data, pos, item)
     # . Series[str]
-    elif dtype == prefix.NDARRAY_DTYPE_UNICODE_ID:
-        arr = np.PyArray_Cast(
-            _deserialize_series_common(data, pos, item, np.NPY_TYPES.NPY_OBJECT),
-            np.NPY_TYPES.NPY_UNICODE,
-        )
+    if dtype == prefix.NDARRAY_DTYPE_UNICODE_ID:
+        return _deserialize_series_common(data, pos, item, np.NPY_TYPES.NPY_OBJECT)
     # . unrecognized dtype
-    else:
-        raise errors.DeserializeValueError(
-            "<Serializor> Failed to deserialize 'data': "
-            "unknown <'pandas.Series'> dtype '%s'." % str_fr_ucs4(dtype)
-        )
+    raise errors.DeserializeValueError(
+        "<'Serializor'>\nFailed to deserialize 'data': "
+        "unknown <'pandas.Series'> dtype '%s'." % str_fr_ucs4(dtype)
+    )
 
-    # Generate Series
-    return typeref.PD_SERIES(arr, copy=False)
+
+@cython.cfunc
+@cython.inline(True)
+def _deserialize_series_object(
+    data: str,
+    pos: cython.Py_ssize_t[2],
+) -> object:
+    """(cfunc) Deserialize pandas.Series token
+    of the 'data' to `<'Series[object]'>`.
+
+    This function is specifically for Series
+    with dtype of: "O" (object).
+
+    ### Example:
+    >>> data = '...IO3[i1,f1.234,o1]...'
+        return Series([1, 1.234, True], dtype="O")
+    """
+    # Parse Series size & name
+    idx: cython.Py_ssize_t = pos[0] + 2  # skip 'IO'
+    info = _parse_series_info(data, idx, pos[1])
+    loc_size: cython.Py_ssize_t = info.size
+    loc_name: cython.Py_ssize_t = info.name
+    if loc_name == 0:
+        size: cython.Py_ssize_t = slice_to_int(data, idx, loc_size)  # type: ignore
+        name: str = None
+        idx = loc_size  # 'IO3{[}....]'
+    else:
+        size: cython.Py_ssize_t = slice_to_int(data, idx, loc_size)  # type: ignore
+        name: str = slice_to_unicode(data, loc_size + 1, loc_name)  # type: ignore
+        idx = loc_name  # 'IO3|name{[}....]'
+
+    # Deserialize: Series
+    dim: np.npy_intp[1] = [size]
+    arr: np.ndarray = np.PyArray_EMPTY(1, dim, np.NPY_TYPES.NPY_OBJECT, 0)
+    # . empty Series: 'IO0[]'
+    if size == 0:
+        pos[0] = idx + 3  # skip '[]' & ','
+        return typeref.SERIES(arr, name=name, copy=False)
+    # Deserialize: ndarray
+    pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
+    for i in range(size):
+        serialize.ndarray_setitem_1d(arr, i, _deserialize_item(data, pos))
+    pos[0] += 2  # skip the ending ']' & ','
+    return typeref.SERIES(arr, name=name, copy=False)
 
 
 @cython.cfunc
@@ -1316,30 +1356,38 @@ def _deserialize_series_common(
     dtype: cython.int,
 ) -> object:
     """(cfunc) Deserialize pandas.Series token
-    of the 'data' to `<'ndarray[str/float/int/uint/bool]'>`.
+    of the 'data' to `<'Series[str/float/int/uint/bool]'>`.
 
     This function is specifically for Series with dtype of:
     "U" (str), "f" (float), "i" (int), "u" (uint) and "b" (bool).
 
     ### Example:
     >>> data = '...If3[1.1,2.2,3.3]...'
-        return numpy.array([1.1, 2.2, 3.3], dtype=np.float64)
+        return Series([1.1, 2.2, 3.3], dtype=np.float64)
 
     >>> data = '...Ii3[1,2,3]...'
-        return numpy.array([1, 2, 3], dtype=np.int64)
+        return Series([1, 2, 3], dtype=np.int64)
 
     >>> data = '...Iu3[1,2,3]...'
-        return numpy.array([1, 2, 3], dtype=np.uint64)
+        return Series([1, 2, 3], dtype=np.uint64)
 
     >>> data = '...Ib3[1,0,1]...'
-        return numpy.array([True, False, True], dtype=np.bool_)
+        return Series([True, False, True], dtype=np.bool_)
     """
     # Parse Series size
     idx: cython.Py_ssize_t = pos[0] + 2  # skip 'If'
     eof: cython.Py_ssize_t = pos[1]
-    loc: cython.Py_ssize_t = find_open_bracket(data, idx, eof)  # type: ignore
-    size: cython.Py_ssize_t = slice_to_int(data, idx, loc)  # type: ignore
-    idx = loc  # 'If3{[}....]'
+    info = _parse_series_info(data, idx, eof)
+    loc_size: cython.Py_ssize_t = info.size
+    loc_name: cython.Py_ssize_t = info.name
+    if loc_name == 0:
+        size: cython.Py_ssize_t = slice_to_int(data, idx, loc_size)  # type: ignore
+        name: str = None
+        idx = loc_size  # 'If3{[}....]'
+    else:
+        size: cython.Py_ssize_t = slice_to_int(data, idx, loc_size)  # type: ignore
+        name: str = slice_to_unicode(data, loc_size + 1, loc_name)  # type: ignore
+        idx = loc_name  # 'If3|name{[}....]'
 
     # Deserialize: Series
     dim: np.npy_intp[1] = [size]
@@ -1347,7 +1395,7 @@ def _deserialize_series_common(
     # . empty Series # 'If0[]'
     if size == 0:
         pos[0] = idx + 3  # skip '[]' & ','
-        return arr
+        return typeref.SERIES(arr, name=name, copy=False)
     #  . find Series end
     if not item:
         loc = eof
@@ -1360,7 +1408,7 @@ def _deserialize_series_common(
     for i in range(size):
         serialize.ndarray_setitem_1d(arr, i, next(items))
     pos[0] = loc + 1  # update position & skip ','
-    return arr
+    return typeref.SERIES(arr, name=name, copy=False)
 
 
 @cython.cfunc
@@ -1370,19 +1418,20 @@ def _deserialize_series_dt64td64(
     pos: cython.Py_ssize_t[2],
     item: cython.bint,
     dt64: cython.bint,
+    cls: object,
 ) -> object:
     """(cfunc) Deserialize pandas.Series token
-    of the 'data' to `<'ndarray[datetime64/timedelta64]'>`.
+    of the 'data' to `<'Series[datetime64/timedelta64]'>`.
 
     This function is specifically for Series with
     dtype of: "M" (datetime64) and "m" (timedelta64).
 
     ### Example:
     >>> data = '...IMs3[1672531200,1672617600,1672704000]...'
-        return numpy.array([1672531200,1672617600,1672704000], dtype="datetime64[s]")
+        return Series([1672531200,1672617600,1672704000], dtype="datetime64[s]")
 
     >>> data = '...Ims3[1,2,3]...'
-        return numpy.array([1, 2, 3], dtype="timedelta64[s]")
+        return Series([1, 2, 3], dtype="timedelta64[s]")
     """
     # If the 4th character is ASCII digit [0-9]
     # unit is the 3rd character: IM{s}3
@@ -1398,16 +1447,24 @@ def _deserialize_series_dt64td64(
 
     # Parse Series size
     eof: cython.Py_ssize_t = pos[1]
-    loc: cython.Py_ssize_t = find_open_bracket(data, idx, eof)  # type: ignore
-    size: cython.Py_ssize_t = slice_to_int(data, idx, loc)  # type: ignore
-    idx = loc  # 'IMs3{[}....]'
+    info = _parse_series_info(data, idx, eof)
+    loc_size: cython.Py_ssize_t = info.size
+    loc_name: cython.Py_ssize_t = info.name
+    if loc_name == 0:
+        size: cython.Py_ssize_t = slice_to_int(data, idx, loc_size)  # type: ignore
+        name: str = None
+        idx = loc_size  # 'IMs3{[}....]'
+    else:
+        size: cython.Py_ssize_t = slice_to_int(data, idx, loc_size)  # type: ignore
+        name: str = slice_to_unicode(data, loc_size + 1, loc_name)  # type: ignore
+        idx = loc_name  # 'IMs3|name{[}....]'
 
     # Deserialize: Series
     arr: np.ndarray = FN_NUMPY_EMPTY(size, dtype=dtype)
     # . empty Series # 'IMs0[]'
     if size == 0:
         pos[0] = idx + 3  # skip '[]' & ','
-        return arr
+        return cls(arr, name=name, copy=False)
     # . find Series end
     if not item:
         loc = eof
@@ -1418,7 +1475,7 @@ def _deserialize_series_dt64td64(
     for i in range(size):
         serialize.ndarray_setitem_1d(arr, i, next(items))
     pos[0] = loc + 1  # update position & skip ','
-    return arr
+    return cls(arr, name=name, copy=False)
 
 
 @cython.cfunc
@@ -1429,21 +1486,29 @@ def _deserialize_series_complex(
     item: cython.bint,
 ) -> object:
     """(cfunc) Deserialize pandas.Series token
-    of the 'data' to `<'ndarray[complex]'>`.
+    of the 'data' to `<'Series[complex]'>`.
 
     This function is specifically for Series
     with dtype of: "c" (complex).
 
     ### Example:
     >>> data = '...Ic3[1.0,1.0,2.0,2.0,3.0,3.0]...'
-        return numpy.array([1 + 1j, 2 + 2j, 3 + 3j], dtype=np.complex128)
+        return Series([1 + 1j, 2 + 2j, 3 + 3j], dtype=np.complex128)
     """
     # Parse Series size
     idx: cython.Py_ssize_t = pos[0] + 2  # skip 'Ic'
     eof: cython.Py_ssize_t = pos[1]
-    loc: cython.Py_ssize_t = find_open_bracket(data, idx, eof)  # type: ignore
-    size: cython.Py_ssize_t = slice_to_int(data, idx, loc)  # type: ignore
-    idx = loc  # 'Ic3{[}....]'
+    info = _parse_series_info(data, idx, eof)
+    loc_size: cython.Py_ssize_t = info.size
+    loc_name: cython.Py_ssize_t = info.name
+    if loc_name == 0:
+        size: cython.Py_ssize_t = slice_to_int(data, idx, loc_size)  # type: ignore
+        name: str = None
+        idx = loc_size  # 'Ic3{[}....]'
+    else:
+        size: cython.Py_ssize_t = slice_to_int(data, idx, loc_size)  # type: ignore
+        name: str = slice_to_unicode(data, loc_size + 1, loc_name)  # type: ignore
+        idx = loc_name  # 'Ic3|name{[}....]'
 
     # Deserialize: Series
     dim: np.npy_intp[1] = [size]
@@ -1451,7 +1516,7 @@ def _deserialize_series_complex(
     # . empty Series: 'Ic0[]'
     if size == 0:
         pos[0] = idx + 3  # skip '[]' & ','
-        return arr
+        return typeref.SERIES(arr, name=name, copy=False)
     # . find Series end
     if not item:
         loc = eof
@@ -1462,7 +1527,7 @@ def _deserialize_series_complex(
     for i in range(size):
         serialize.ndarray_setitem_1d(arr, i, gen_complex(next(items), next(items)))
     pos[0] = loc + 1  # update position & skip ','
-    return arr
+    return typeref.SERIES(arr, name=name, copy=False)
 
 
 @cython.cfunc
@@ -1473,21 +1538,29 @@ def _deserialize_series_bytes(
     item: cython.bint,
 ) -> object:
     """(cfunc) Deserialize pandas.Series token
-    of the 'data' to `<'ndarray[bytes]'>`.
+    of the 'data' to `<'Series[bytes]'>`.
 
     This function is specifically for Series
     with dtype of: "S" (bytes string).
 
     ### Example:
     >>> data = '...IS3["1","2","3"]...'
-        return numpy.array([b"1", b"2", b"3"], dtype="S")
+        return Series([b"1", b"2", b"3"], dtype="S")
     """
-    # Parse Series size
+    # Parse Series size & name
     idx: cython.Py_ssize_t = pos[0] + 2  # skip 'IS'
     eof: cython.Py_ssize_t = pos[1]
-    loc: cython.Py_ssize_t = find_open_bracket(data, idx, eof)  # type: ignore
-    size: cython.Py_ssize_t = slice_to_int(data, idx, loc)  # type: ignore
-    idx = loc  # 'IS3{[}....]'
+    info = _parse_series_info(data, idx, eof)
+    loc_size: cython.Py_ssize_t = info.size
+    loc_name: cython.Py_ssize_t = info.name
+    if loc_name == 0:
+        size: cython.Py_ssize_t = slice_to_int(data, idx, loc_size)  # type: ignore
+        name: str = None
+        idx = loc_size  # 'IS3{[}....]'
+    else:
+        size: cython.Py_ssize_t = slice_to_int(data, idx, loc_size)  # type: ignore
+        name: str = slice_to_unicode(data, loc_size + 1, loc_name)  # type: ignore
+        idx = loc_name  # 'IS3|name{[}....]'
 
     # Deserialize: Series
     dim: np.npy_intp[1] = [size]
@@ -1495,7 +1568,9 @@ def _deserialize_series_bytes(
     # . empty Series: 'IS0[]'
     if size == 0:
         pos[0] = idx + 3  # skip '[]' & ','
-        return arr
+        return typeref.SERIES(
+            np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING), name=name, copy=False
+        )
     # . find Series end
     if not item:
         loc = eof
@@ -1504,43 +1579,34 @@ def _deserialize_series_bytes(
     # . deserialize: ndarray
     items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
     for i in range(size):
-        serialize.ndarray_setitem_1d(arr, i, serialize.bytes_encode_utf8(next(items)))
+        serialize.ndarray_setitem_1d(arr, i, serialize.encode_str(next(items)))
     pos[0] = loc + 1  # update position & skip ','
-    return arr
+    return typeref.SERIES(
+        np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING), name=name, copy=False
+    )
 
 
 @cython.cfunc
 @cython.inline(True)
-def _deserialize_series_object(data: str, pos: cython.Py_ssize_t[2]) -> object:
-    """(cfunc) Deserialize pandas.Series token
-    of the 'data' to `<'ndarray[object]'>`.
-
-    This function is specifically for Series
-    with dtype of: "O" (object).
-
-    ### Example:
-    >>> data = '...IO3[i1,f1.234,o1]...'
-        return numpy.array([1, 1.234, True], dtype="O")
-    """
-    # Parse Series size
-    idx: cython.Py_ssize_t = pos[0] + 2  # skip 'IO'
-    loc: cython.Py_ssize_t = find_open_bracket(data, idx, pos[1])  # type: ignore
-    size: cython.Py_ssize_t = slice_to_int(data, idx, loc)  # type: ignore
-    idx = loc  # 'IO3{[}....]'
-
-    # Deserialize: Series
-    dim: np.npy_intp[1] = [size]
-    arr: np.ndarray = np.PyArray_EMPTY(1, dim, np.NPY_TYPES.NPY_OBJECT, 0)
-    # . empty Series: 'IO0[]'
-    if size == 0:
-        pos[0] = idx + 3  # skip '[]' & ','
-        return arr
-    # Deserialize: ndarray
-    pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
-    for i in range(size):
-        serialize.ndarray_setitem_1d(arr, i, _deserialize_item(data, pos))
-    pos[0] += 2  # skip the ending ']' & ','
-    return arr
+def _parse_series_info(
+    data: str,
+    idx: cython.Py_ssize_t,
+    eof: cython.Py_ssize_t,
+) -> sinfo:  # type: ignore
+    """(cfunc) Parse pandas.Series `<'info'>`."""
+    loc: cython.Py_ssize_t = idx
+    sep: cython.Py_ssize_t = 0
+    while loc < eof:
+        ch: cython.Py_UCS4 = read_char(data, loc)  # type: ignore
+        if ch == "|":
+            sep = loc
+        if ch == "[":
+            return sinfo(loc, 0) if sep == 0 else sinfo(sep, loc)  # type: ignore
+        loc += 1
+    raise errors.DeserializeValueError(
+        "<'Serializor'>\nFailed to parse 'pandas.Series' info from:\n'%s'"
+        % (slice_to_unicode(data, idx, eof))  # type: ignore
+    )
 
 
 # Pandas DataFrame ------------------------------------------------------------------
@@ -1573,7 +1639,7 @@ def _deserialize_dataframe(data: str, pos: cython.Py_ssize_t[2]) -> object:
     if uni_l == 0:
         # . true empty DataFrame: 'F3|0[]'
         pos[0] = loc + 3  # skip '[]' & ','
-        return typeref.PD_DATAFRAME({}, copy=False)
+        return typeref.DATAFRAME({}, copy=False)
 
     # Deserialize column names: F3|9{["i_col","f_col"]}
     idx = loc + uni_l  # end of json array
@@ -1582,7 +1648,7 @@ def _deserialize_dataframe(data: str, pos: cython.Py_ssize_t[2]) -> object:
     if rows == 0:
         # . empty DataFrame with columns: 'F0|9["i_col","f_col"]'
         arr_empty = np.array([], dtype="O")
-        return typeref.PD_DATAFRAME({col: arr_empty for col in cols}, copy=False)
+        return typeref.DATAFRAME({col: arr_empty for col in cols}, copy=False)
 
     # Deserialize: DataFrame
     res: dict = {}
@@ -1591,58 +1657,72 @@ def _deserialize_dataframe(data: str, pos: cython.Py_ssize_t[2]) -> object:
         dtype: cython.Py_UCS4 = read_char(data, pos[0])  # type: ignore
         # . `<'object'>`
         if dtype == prefix.NDARRAY_DTYPE_OBJECT_ID:
-            val = _deserialize_dataframe_object(data, pos, rows)
+            c = _deserialize_dataframe_object(data, pos, rows)
         # . `<'float'>`
         elif dtype == prefix.NDARRAY_DTYPE_FLOAT_ID:
-            val = _deserialize_dataframe_common(
-                data, pos, rows, np.NPY_TYPES.NPY_FLOAT64
-            )
+            c = _deserialize_dataframe_common(data, pos, rows, np.NPY_TYPES.NPY_FLOAT64)
         # . `<'int'>`
         elif dtype == prefix.NDARRAY_DTYPE_INT_ID:
-            val = _deserialize_dataframe_common(data, pos, rows, np.NPY_TYPES.NPY_INT64)
+            c = _deserialize_dataframe_common(data, pos, rows, np.NPY_TYPES.NPY_INT64)
         # . `<uint>`
         elif dtype == prefix.NDARRAY_DTYPE_UINT_ID:
-            val = _deserialize_dataframe_common(
-                data, pos, rows, np.NPY_TYPES.NPY_UINT64
-            )
+            c = _deserialize_dataframe_common(data, pos, rows, np.NPY_TYPES.NPY_UINT64)
         # . `<'bool'>`
         elif dtype == prefix.NDARRAY_DTYPE_BOOL_ID:
-            val = _deserialize_dataframe_common(data, pos, rows, np.NPY_TYPES.NPY_BOOL)
+            c = _deserialize_dataframe_common(data, pos, rows, np.NPY_TYPES.NPY_BOOL)
         # . `<datetime64>`
         elif dtype == prefix.NDARRAY_DTYPE_DT64_ID:
-            val = _deserialize_dataframe_dt64td64(data, pos, rows, True)
+            c = _deserialize_dataframe_dt64td64(data, pos, rows, True)
         # . `<timedelta64>`
         elif dtype == prefix.NDARRAY_DTYPE_TD64_ID:
-            val = _deserialize_dataframe_dt64td64(data, pos, rows, False)
+            c = _deserialize_dataframe_dt64td64(data, pos, rows, False)
         # . `<'complex'>`
         elif dtype == prefix.NDARRAY_DTYPE_COMPLEX_ID:
-            val = _deserialize_dataframe_complex(data, pos, rows)
+            c = _deserialize_dataframe_complex(data, pos, rows)
         # . `<'bytes'>`
         elif dtype == prefix.NDARRAY_DTYPE_BYTES_ID:
-            val = np.PyArray_Cast(
-                _deserialize_dataframe_bytes(data, pos, rows),
-                np.NPY_TYPES.NPY_STRING,
-            )
+            c = _deserialize_dataframe_bytes(data, pos, rows)
         # . `<'str'>`
         elif dtype == prefix.NDARRAY_DTYPE_UNICODE_ID:
-            val = np.PyArray_Cast(
-                _deserialize_dataframe_common(data, pos, rows, np.NPY_TYPES.NPY_OBJECT),
-                np.NPY_TYPES.NPY_UNICODE,
-            )
+            c = _deserialize_dataframe_common(data, pos, rows, np.NPY_TYPES.NPY_OBJECT)
         # . unrecognized dtype
         else:
             raise errors.DeserializeValueError(
-                "<Serializor> Failed to deserialize 'data': unknown "
+                "<'Serializor'>\nFailed to deserialize 'data': unknown "
                 "<'pandas.DataFrame'> column (Series) dtype '%s'." % str_fr_ucs4(dtype)
             )
         # . collect
-        res[col] = val
+        res[col] = c
 
     # Update position
     pos[0] += 2  # skip the ending ']' & ','
 
     # Generate DataFrame
-    return typeref.PD_DATAFRAME(res, copy=False)
+    return typeref.DATAFRAME(res, copy=False)
+
+
+@cython.cfunc
+@cython.inline(True)
+def _deserialize_dataframe_object(
+    data: str,
+    pos: cython.Py_ssize_t[2],
+    rows: cython.Py_ssize_t,
+) -> object:
+    """(cfunc) Deserialize pandas.DataFrame column token
+    of the 'data' to `<'ndarray[object]'>`.
+
+    This function is specifically for DataFrame columns
+    with dtype of: "O" (object).
+    """
+    # Deserialize: Series
+    dim: np.npy_intp[1] = [rows]
+    arr: np.ndarray = np.PyArray_EMPTY(1, dim, np.NPY_TYPES.NPY_OBJECT, 0)
+    # Deserialize: Series
+    pos[0] += 2  # skip 'O[' to the 1st identifier: 'i'
+    for i in range(rows):
+        serialize.ndarray_setitem_1d(arr, i, _deserialize_item(data, pos))
+    pos[0] += 2  # skip the ending ']' & ','
+    return arr
 
 
 @cython.cfunc
@@ -1693,7 +1773,7 @@ def _deserialize_dataframe_dt64td64(
     # If the 3rd character is '['
     # unit is the 2nd character: M{s}[...]
     idx: cython.Py_ssize_t = pos[0] + 1  # skip identifier
-    if read_char(data, idx + 1) == CHAR_OPEN_BRACKET:  # type: ignore
+    if read_char(data, idx + 1) == "[":  # type: ignore
         unit: str = str_fr_ucs4(read_char(data, idx))  # type: ignore
         idx += 1
     # Otherwise, unit is the 2nd & 3rd characters: M{us}[...]
@@ -1763,33 +1843,9 @@ def _deserialize_dataframe_bytes(
     # . deserialize: ndarray
     items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
     for i in range(rows):
-        serialize.ndarray_setitem_1d(arr, i, serialize.bytes_encode_utf8(next(items)))
+        serialize.ndarray_setitem_1d(arr, i, serialize.encode_str(next(items)))
     pos[0] = loc + 1  # update position & skip ','
-    return arr
-
-
-@cython.cfunc
-@cython.inline(True)
-def _deserialize_dataframe_object(
-    data: str,
-    pos: cython.Py_ssize_t[2],
-    rows: cython.Py_ssize_t,
-) -> object:
-    """(cfunc) Deserialize pandas.DataFrame column token
-    of the 'data' to `<'ndarray[object]'>`.
-
-    This function is specifically for DataFrame columns
-    with dtype of: "O" (object).
-    """
-    # Deserialize: Series
-    dim: np.npy_intp[1] = [rows]
-    arr: np.ndarray = np.PyArray_EMPTY(1, dim, np.NPY_TYPES.NPY_OBJECT, 0)
-    # Deserialize: Series
-    pos[0] += 2  # skip 'O[' to the 1st identifier: 'i'
-    for i in range(rows):
-        serialize.ndarray_setitem_1d(arr, i, _deserialize_item(data, pos))
-    pos[0] += 2  # skip the ending ']' & ','
-    return arr
+    return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
 
 
 # Pandas Datetime/Timedelta Index ---------------------------------------------------
@@ -1818,9 +1874,7 @@ def _deserialize_datetime_index(
         )
     """
     pos[0] += 1  # skip identifier
-    val = _deserialize_series_dt64td64(data, pos, item, True)
-    # Generate DatetimeIndex
-    return typeref.PD_DATETIMEINDEX(val)
+    return _deserialize_series_dt64td64(data, pos, item, True, typeref.DATETIMEINDEX)
 
 
 @cython.cfunc
@@ -1848,9 +1902,7 @@ def _deserialize_timedelta_index(
         )
     """
     pos[0] += 1  # skip identifier
-    val = _deserialize_series_dt64td64(data, pos, item, False)
-    # Generate TimedeltaIndex
-    return typeref.PD_TIMEDELTAINDEX(val)
+    return _deserialize_series_dt64td64(data, pos, item, False, typeref.TIMEDELTAINDEX)
 
 
 # Deserialize -----------------------------------------------------------------------
@@ -1948,7 +2000,7 @@ def _deserialize_obj(data: str, pos: cython.Py_ssize_t[2]) -> object:
 
     # Invalid 'data'
     raise errors.DeserializeValueError(
-        "<Serializor> Failed to deserialize 'data': "
+        "<'Serializor'>\nFailed to deserialize 'data': "
         "unknown object identifer '%s'." % str_fr_ucs4(obj_id)
     )
 
@@ -2090,28 +2142,24 @@ def _deserialize_item(data: str, pos: cython.Py_ssize_t[2]) -> object:
 
     ##### Invalid 'data' #####
     raise errors.DeserializeValueError(
-        "<Serializor> Failed to deserialize 'data': "
+        "<'Serializor'>\nFailed to deserialize 'data': "
         "unknown object[item] identifer '%s'." % str_fr_ucs4(obj_id)
     )
 
 
-@cython.cfunc
-def capi_deserialize(data: str) -> object:
-    """(cfunc) Deserialize the serialized 'data' to a Python `<'object'>`.
+@cython.ccall
+def deserialize(data: str) -> object:
+    """Deserialize the serialized 'data' to a Python `<'object'>`.
 
     The given 'data' must be the result of the `serialize()`
     function in this package, which will be used to re-create
     the original Python object.
     """
     # Validate data
-    if data is None:
-        raise errors.DeserializeValueError(
-            "<Serializor> Failed to deserialize 'data': %s." % type(data)
-        )
     eof: cython.Py_ssize_t = str_len(data)
     if eof == 0:
         raise errors.DeserializeValueError(
-            "<Serializor> Failed to deserialize 'data': '%s'." % data
+            "<'Serializor'>\nFailed to deserialize 'data': '%s'." % data
         )
     pos: cython.Py_ssize_t[2] = [0, eof]
 
@@ -2121,18 +2169,8 @@ def capi_deserialize(data: str) -> object:
     except errors.DeserializeError:
         raise
     except MemoryError as err:
-        raise MemoryError("<Serializor> %s" % err) from err
+        raise MemoryError("<'Serializor'>\n%s" % err) from err
     except Exception as err:
         raise errors.DeserializeError(
-            "<Serializor> Failed to deserialize:\n'%s'\nError: %s" % (data, err)
+            "<'Serializor'>\nFailed to deserialize:\n'%s'\nError: %s" % (data, err)
         ) from err
-
-
-def deserialize(data: str) -> object:
-    """Deserialize the serialized 'data' to a Python `<'object'>`.
-
-    The given 'data' must be the result of the `serialize()`
-    function in this package, which will be used to re-create
-    the original Python object.
-    """
-    return capi_deserialize(data)
