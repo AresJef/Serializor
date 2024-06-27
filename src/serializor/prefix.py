@@ -106,26 +106,27 @@ TIMEDELTA64_AS: str = TIMEDELTA64 + "as"  # 'mas'
 # Numpy.ndarray ---------------------------------------------------------------------
 NDARRAY: str = "N"
 # fmt: off
-arr: np.ndarray = np.array(None, dtype=object)
-NDARRAY_DTYPE_OBJECT: str = str_fr_ucs4(arr.descr.kind)  # 'O'
-arr: np.ndarray = np.array(1.1, dtype=np.float64)
-NDARRAY_DTYPE_FLOAT: str = str_fr_ucs4(arr.descr.kind)  # 'f'
-arr: np.ndarray = np.array(1, dtype=np.int64)
-NDARRAY_DTYPE_INT: str = str_fr_ucs4(arr.descr.kind)  # 'i'
-arr: np.ndarray = np.array(1, dtype=np.uint64)
-NDARRAY_DTYPE_UINT: str = str_fr_ucs4(arr.descr.kind)  # 'u'
-arr: np.ndarray = np.array(1, dtype=np.bool_)
-NDARRAY_DTYPE_BOOL: str = str_fr_ucs4(arr.descr.kind)  # 'b'
-arr: np.ndarray = np.array(1, dtype="datetime64[ns]")
-NDARRAY_DTYPE_DT64: str = str_fr_ucs4(arr.descr.kind)  # 'M'
-arr: np.ndarray = np.array(1, dtype="timedelta64[ns]")
-NDARRAY_DTYPE_TD64: str = str_fr_ucs4(arr.descr.kind)  # 'm'
-arr: np.ndarray = np.array(1 + 1j, dtype=np.complex128)
-NDARRAY_DTYPE_COMPLEX: str = str_fr_ucs4(arr.descr.kind)  # 'c'
-arr: np.ndarray = np.array(b"", dtype="S")
-NDARRAY_DTYPE_BYTES: str = str_fr_ucs4(arr.descr.kind)  # 'S'
-arr: np.ndarray = np.array("", dtype="U")
-NDARRAY_DTYPE_UNICODE: str = str_fr_ucs4(arr.descr.kind)  # 'U'
+_arr: np.ndarray = np.array(None, dtype=object)
+NDARRAY_DTYPE_OBJECT: str = str_fr_ucs4(_arr.descr.kind)  # 'O'
+_arr: np.ndarray = np.array(1.1, dtype=np.float64)
+NDARRAY_DTYPE_FLOAT: str = str_fr_ucs4(_arr.descr.kind)  # 'f'
+_arr: np.ndarray = np.array(1, dtype=np.int64)
+NDARRAY_DTYPE_INT: str = str_fr_ucs4(_arr.descr.kind)  # 'i'
+_arr: np.ndarray = np.array(1, dtype=np.uint64)
+NDARRAY_DTYPE_UINT: str = str_fr_ucs4(_arr.descr.kind)  # 'u'
+_arr: np.ndarray = np.array(1, dtype=np.bool_)
+NDARRAY_DTYPE_BOOL: str = str_fr_ucs4(_arr.descr.kind)  # 'b'
+_arr: np.ndarray = np.array(1, dtype="datetime64[ns]")
+NDARRAY_DTYPE_DT64: str = str_fr_ucs4(_arr.descr.kind)  # 'M'
+_arr: np.ndarray = np.array(1, dtype="timedelta64[ns]")
+NDARRAY_DTYPE_TD64: str = str_fr_ucs4(_arr.descr.kind)  # 'm'
+_arr: np.ndarray = np.array(1 + 1j, dtype=np.complex128)
+NDARRAY_DTYPE_COMPLEX: str = str_fr_ucs4(_arr.descr.kind)  # 'c'
+_arr: np.ndarray = np.array(b"", dtype="S")
+NDARRAY_DTYPE_BYTES: str = str_fr_ucs4(_arr.descr.kind)  # 'S'
+_arr: np.ndarray = np.array("", dtype="U")
+NDARRAY_DTYPE_UNICODE: str = str_fr_ucs4(_arr.descr.kind)  # 'U'
+_arr: np.ndarray = None
 # fmt: on
 # . identifier
 NDARRAY_ID: cython.Py_UCS4 = read_char(NDARRAY, 0)

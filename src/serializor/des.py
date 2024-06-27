@@ -579,7 +579,7 @@ def _deserialize_ndarray_object(data: str, pos: cython.Py_ssize_t[2]) -> object:
         # . deserialize: ndarray
         pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
         for i in range(shape.i):
-            ser.ndarray_setitem_1d(arr, i, _deserialize_item(data, pos))
+            ser.arr_setitem_1d(arr, i, _deserialize_item(data, pos))
         pos[0] += 2  # skip the ending ']' & ','
         return arr
 
@@ -595,7 +595,7 @@ def _deserialize_ndarray_object(data: str, pos: cython.Py_ssize_t[2]) -> object:
         pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
         for i in range(shape.i):
             for j in range(shape.j):
-                ser.ndarray_setitem_2d(arr, i, j, _deserialize_item(data, pos))
+                ser.arr_setitem_2d(arr, i, j, _deserialize_item(data, pos))
         pos[0] += 2  # skip the ending ']' & ','
         return arr
 
@@ -612,9 +612,7 @@ def _deserialize_ndarray_object(data: str, pos: cython.Py_ssize_t[2]) -> object:
         for i in range(shape.i):
             for j in range(shape.j):
                 for k in range(shape.k):
-                    ser.ndarray_setitem_3d(
-                        arr, i, j, k, _deserialize_item(data, pos)
-                    )
+                    ser.arr_setitem_3d(arr, i, j, k, _deserialize_item(data, pos))
         pos[0] += 2  # skip the ending ']' & ','
         return arr
 
@@ -632,7 +630,7 @@ def _deserialize_ndarray_object(data: str, pos: cython.Py_ssize_t[2]) -> object:
             for j in range(shape.j):
                 for k in range(shape.k):
                     for l in range(shape.l):
-                        ser.ndarray_setitem_4d(
+                        ser.arr_setitem_4d(
                             arr, i, j, k, l, _deserialize_item(data, pos)
                         )
         pos[0] += 2  # skip the ending ']' & ','
@@ -701,7 +699,7 @@ def _deserialize_ndarray_common(
         # . deserialize: ndarray
         items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
         for i in range(shape.i):
-            ser.ndarray_setitem_1d(arr, i, next(items))
+            ser.arr_setitem_1d(arr, i, next(items))
         pos[0] = loc + 1  # update position & skip ','
         return arr
 
@@ -724,7 +722,7 @@ def _deserialize_ndarray_common(
         items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
         for i in range(shape.i):
             for j in range(shape.j):
-                ser.ndarray_setitem_2d(arr, i, j, next(items))
+                ser.arr_setitem_2d(arr, i, j, next(items))
         pos[0] = loc + 1  # update position & skip ','
         return arr
 
@@ -748,7 +746,7 @@ def _deserialize_ndarray_common(
         for i in range(shape.i):
             for j in range(shape.j):
                 for k in range(shape.k):
-                    ser.ndarray_setitem_3d(arr, i, j, k, next(items))
+                    ser.arr_setitem_3d(arr, i, j, k, next(items))
         pos[0] = loc + 1  # update position & skip ','
         return arr
 
@@ -773,7 +771,7 @@ def _deserialize_ndarray_common(
             for j in range(shape.j):
                 for k in range(shape.k):
                     for l in range(shape.l):
-                        ser.ndarray_setitem_4d(arr, i, j, k, l, next(items))
+                        ser.arr_setitem_4d(arr, i, j, k, l, next(items))
         pos[0] = loc + 1  # update position & skip ','
         return arr
 
@@ -840,7 +838,7 @@ def _deserialize_ndarray_dt64td64(
         # . deserialize: ndarray
         items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
         for i in range(shape.i):
-            ser.ndarray_setitem_1d(arr, i, next(items))
+            ser.arr_setitem_1d(arr, i, next(items))
         pos[0] = loc + 1  # update position & skip ','
         return arr
 
@@ -860,7 +858,7 @@ def _deserialize_ndarray_dt64td64(
         items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
         for i in range(shape.i):
             for j in range(shape.j):
-                ser.ndarray_setitem_2d(arr, i, j, next(items))
+                ser.arr_setitem_2d(arr, i, j, next(items))
         pos[0] = loc + 1  # update position & skip ','
         return arr
 
@@ -881,7 +879,7 @@ def _deserialize_ndarray_dt64td64(
         for i in range(shape.i):
             for j in range(shape.j):
                 for k in range(shape.k):
-                    ser.ndarray_setitem_3d(arr, i, j, k, next(items))
+                    ser.arr_setitem_3d(arr, i, j, k, next(items))
         pos[0] = loc + 1  # update position & skip ','
         return arr
 
@@ -903,7 +901,7 @@ def _deserialize_ndarray_dt64td64(
             for j in range(shape.j):
                 for k in range(shape.k):
                     for l in range(shape.l):
-                        ser.ndarray_setitem_4d(arr, i, j, k, l, next(items))
+                        ser.arr_setitem_4d(arr, i, j, k, l, next(items))
         pos[0] = loc + 1  # update position & skip ','
         return arr
 
@@ -955,7 +953,7 @@ def _deserialize_ndarray_complex(
         # . deserialize: ndarray
         items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
         for i in range(shape.i):
-            ser.ndarray_setitem_1d(arr, i, gen_complex(next(items), next(items)))
+            ser.arr_setitem_1d(arr, i, gen_complex(next(items), next(items)))
         pos[0] = loc + 1  # update position & skip ','
         return arr
 
@@ -976,9 +974,7 @@ def _deserialize_ndarray_complex(
         items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
         for i in range(shape.i):
             for j in range(shape.j):
-                ser.ndarray_setitem_2d(
-                    arr, i, j, gen_complex(next(items), next(items))
-                )
+                ser.arr_setitem_2d(arr, i, j, gen_complex(next(items), next(items)))
         pos[0] = loc + 1  # update position & skip ','
         return arr
 
@@ -1000,7 +996,7 @@ def _deserialize_ndarray_complex(
         for i in range(shape.i):
             for j in range(shape.j):
                 for k in range(shape.k):
-                    ser.ndarray_setitem_3d(
+                    ser.arr_setitem_3d(
                         arr, i, j, k, gen_complex(next(items), next(items))
                     )
         pos[0] = loc + 1  # update position & skip ','
@@ -1025,7 +1021,7 @@ def _deserialize_ndarray_complex(
             for j in range(shape.j):
                 for k in range(shape.k):
                     for l in range(shape.l):
-                        ser.ndarray_setitem_4d(
+                        ser.arr_setitem_4d(
                             arr, i, j, k, l, gen_complex(next(items), next(items))
                         )
         pos[0] = loc + 1  # update position & skip ','
@@ -1079,7 +1075,7 @@ def _deserialize_ndarray_bytes(
         # . deserialize: ndarray
         items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
         for i in range(shape.i):
-            ser.ndarray_setitem_1d(arr, i, ser.encode_str(next(items)))
+            ser.arr_setitem_1d(arr, i, ser.encode_str(next(items)))
         pos[0] = loc + 1  # update position & skip ','
         return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
 
@@ -1100,9 +1096,7 @@ def _deserialize_ndarray_bytes(
         items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
         for i in range(shape.i):
             for j in range(shape.j):
-                ser.ndarray_setitem_2d(
-                    arr, i, j, ser.encode_str(next(items))
-                )
+                ser.arr_setitem_2d(arr, i, j, ser.encode_str(next(items)))
         pos[0] = loc + 1  # update position & skip ','
         return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
 
@@ -1124,9 +1118,7 @@ def _deserialize_ndarray_bytes(
         for i in range(shape.i):
             for j in range(shape.j):
                 for k in range(shape.k):
-                    ser.ndarray_setitem_3d(
-                        arr, i, j, k, ser.encode_str(next(items))
-                    )
+                    ser.arr_setitem_3d(arr, i, j, k, ser.encode_str(next(items)))
         pos[0] = loc + 1  # update position & skip ','
         return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
 
@@ -1149,9 +1141,7 @@ def _deserialize_ndarray_bytes(
             for j in range(shape.j):
                 for k in range(shape.k):
                     for l in range(shape.l):
-                        ser.ndarray_setitem_4d(
-                            arr, i, j, k, l, ser.encode_str(next(items))
-                        )
+                        ser.arr_setitem_4d(arr, i, j, k, l, ser.encode_str(next(items)))
         pos[0] = loc + 1  # update position & skip ','
         return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
 
@@ -1342,7 +1332,7 @@ def _deserialize_series_object(
     # Deserialize: ndarray
     pos[0] = idx + 1  # skip '[' to the 1st identifier: 'i'
     for i in range(size):
-        ser.ndarray_setitem_1d(arr, i, _deserialize_item(data, pos))
+        ser.arr_setitem_1d(arr, i, _deserialize_item(data, pos))
     pos[0] += 2  # skip the ending ']' & ','
     return typeref.SERIES(arr, name=name, copy=False)
 
@@ -1406,7 +1396,7 @@ def _deserialize_series_common(
     # . deserialize: ndarray
     items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
     for i in range(size):
-        ser.ndarray_setitem_1d(arr, i, next(items))
+        ser.arr_setitem_1d(arr, i, next(items))
     pos[0] = loc + 1  # update position & skip ','
     return typeref.SERIES(arr, name=name, copy=False)
 
@@ -1473,7 +1463,7 @@ def _deserialize_series_dt64td64(
     # . dserialize: ndarray
     items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
     for i in range(size):
-        ser.ndarray_setitem_1d(arr, i, next(items))
+        ser.arr_setitem_1d(arr, i, next(items))
     pos[0] = loc + 1  # update position & skip ','
     return cls(arr, name=name, copy=False)
 
@@ -1525,7 +1515,7 @@ def _deserialize_series_complex(
     # . deserialize: ndarray
     items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
     for i in range(size):
-        ser.ndarray_setitem_1d(arr, i, gen_complex(next(items), next(items)))
+        ser.arr_setitem_1d(arr, i, gen_complex(next(items), next(items)))
     pos[0] = loc + 1  # update position & skip ','
     return typeref.SERIES(arr, name=name, copy=False)
 
@@ -1579,7 +1569,7 @@ def _deserialize_series_bytes(
     # . deserialize: ndarray
     items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
     for i in range(size):
-        ser.ndarray_setitem_1d(arr, i, ser.encode_str(next(items)))
+        ser.arr_setitem_1d(arr, i, ser.encode_str(next(items)))
     pos[0] = loc + 1  # update position & skip ','
     return typeref.SERIES(
         np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING), name=name, copy=False
@@ -1720,7 +1710,7 @@ def _deserialize_dataframe_object(
     # Deserialize: Series
     pos[0] += 2  # skip 'O[' to the 1st identifier: 'i'
     for i in range(rows):
-        ser.ndarray_setitem_1d(arr, i, _deserialize_item(data, pos))
+        ser.arr_setitem_1d(arr, i, _deserialize_item(data, pos))
     pos[0] += 2  # skip the ending ']' & ','
     return arr
 
@@ -1751,7 +1741,7 @@ def _deserialize_dataframe_common(
     # . deserialize: ndarray
     items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
     for i in range(rows):
-        ser.ndarray_setitem_1d(arr, i, next(items))
+        ser.arr_setitem_1d(arr, i, next(items))
     pos[0] = loc + 1  # update position & skip ','
     return arr
 
@@ -1789,7 +1779,7 @@ def _deserialize_dataframe_dt64td64(
     # . deserialize: ndarray
     items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
     for i in range(rows):
-        ser.ndarray_setitem_1d(arr, i, next(items))
+        ser.arr_setitem_1d(arr, i, next(items))
     pos[0] = loc + 1  # update position & skip ','
     return arr
 
@@ -1816,7 +1806,7 @@ def _deserialize_dataframe_complex(
     # . deserialize: ndarray
     items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
     for i in range(rows):
-        ser.ndarray_setitem_1d(arr, i, gen_complex(next(items), next(items)))
+        ser.arr_setitem_1d(arr, i, gen_complex(next(items), next(items)))
     pos[0] = loc + 1  # update position & skip ','
     return arr
 
@@ -1843,7 +1833,7 @@ def _deserialize_dataframe_bytes(
     # . deserialize: ndarray
     items = iter(_orjson_loads(slice_to_unicode(data, idx, loc)))  # type: ignore
     for i in range(rows):
-        ser.ndarray_setitem_1d(arr, i, ser.encode_str(next(items)))
+        ser.arr_setitem_1d(arr, i, ser.encode_str(next(items)))
     pos[0] = loc + 1  # update position & skip ','
     return np.PyArray_Cast(arr, np.NPY_TYPES.NPY_STRING)
 

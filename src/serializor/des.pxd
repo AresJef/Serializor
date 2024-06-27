@@ -1,6 +1,6 @@
 # cython: language_level=3
 
-from libc.stdlib cimport malloc, free, strtod, strtoll
+from libc.stdlib cimport malloc, free, strtold, strtoll
 from cpython.unicode cimport PyUnicode_READ_CHAR as read_char
 from cpython.unicode cimport PyUnicode_Substring, PyUnicode_FindChar
 from serializor cimport ser
@@ -32,8 +32,8 @@ cdef inline unicode slice_to_unicode(str data, Py_ssize_t start, Py_ssize_t end)
     """Slice data `<'str'>` from 'start' to 'end', and convert to `<'unicode'>`."""
     return PyUnicode_Substring(data, start, end)
 
-cdef inline double slice_to_float(str data, Py_ssize_t start, Py_ssize_t end):
-    """Slice data `<'str'>` from 'start' to 'end', and convert to `<'double'>`."""
+cdef inline long double slice_to_float(str data, Py_ssize_t start, Py_ssize_t end):
+    """Slice data `<'str'>` from 'start' to 'end', and convert to `<'long double'>`."""
     # Calculate the size of the token.
     cdef Py_ssize_t size = end - start
     # Allocate memory for the slice.
@@ -48,7 +48,7 @@ cdef inline double slice_to_float(str data, Py_ssize_t start, Py_ssize_t end):
         # Null-terminate the buffer.
         buffer[size] = 0
         # Convert to double.
-        return strtod(buffer, NULL)
+        return strtold(buffer, NULL)
     finally:
         # Free the memory.
         free(buffer)

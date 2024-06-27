@@ -32,7 +32,7 @@ def _convert_to_bytes(val: object) -> bytes:
         return val.tobytes()
     raise errors.CryptoTypeError(
         "<'Serializor'>\nExpects <'str'> or <'bytes'>, "
-        "instead got: %s %s." % (dtype, repr(val))
+        "instead got: %s %r." % (dtype, val)
     )
 
 

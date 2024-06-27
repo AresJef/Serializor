@@ -356,6 +356,7 @@ def benchmark() -> None:
         rounds = 1_000_000
 
         benchmark_simple_object("Hello World", rounds, 2)  # `<str>`
+        benchmark_simple_object(np.str_("Hello World"), rounds, 2)  # `<str>`
         benchmark_simple_object(3.1415926, rounds, 2)  # `<float>`
         benchmark_simple_object(np.float64(-3.1415926), rounds, 2)  # `<np.float64>`
         benchmark_simple_object(float("inf"), rounds, 2)  # `<float> inf`
@@ -565,7 +566,7 @@ def benchmark() -> None:
 
     # Numpy Types
     if run_ndarray:
-        rounds = 1_000_000
+        rounds = 100_000
 
         # fmt: off
         benchmark_ndarray(np.array([], dtype="U"), rounds, 0)  # empty str
@@ -580,8 +581,9 @@ def benchmark() -> None:
         benchmark_ndarray(np.array([], dtype="O"), rounds, 0)  # empty object
         l = ['[apple"]', '[banana"]'] * 5
         benchmark_ndarray(np.array([l, l], dtype="U"), rounds, 0)  # `<np.ndarray>` str
-        l = [i for i in range(10)]
-        benchmark_ndarray(np.array([l, l], dtype=np.float64), rounds, 1)  # `<np.ndarray>` float
+        l = [i for i in range(100)]
+        benchmark_ndarray(np.array([l, l], dtype=np.float32), rounds, 1)  # `<np.ndarray>` float32
+        benchmark_ndarray(np.array([l, l], dtype=np.float64), rounds, 1)  # `<np.ndarray>` float64
         benchmark_ndarray(np.array([l, l], dtype=np.int64), rounds, 1)  # `<np.ndarray>` int
         benchmark_ndarray(np.array([l, l], dtype=np.uint64), rounds, 1)  # `<np.ndarray>` uint
         benchmark_ndarray(np.array([l, l], dtype=np.bool_), rounds, 1)  # `<np.ndarray>` bool
@@ -615,8 +617,10 @@ def benchmark() -> None:
         # fmt: on
         obj = np.array(['[apple"]', '[banana"]'] * 5, dtype="U")
         benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` str
+        obj = np.array([i for i in range(10)], dtype=np.float16)
+        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` float16
         obj = np.array([i for i in range(10)], dtype=np.float64)
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` float
+        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` float64
         obj = np.array([i for i in range(10)], dtype=np.int64)
         benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` int
         obj = np.array([i for i in range(10)], dtype=np.uint64)
@@ -637,7 +641,7 @@ def benchmark() -> None:
 
     # Pandas DataFrame
     if run_dataframe:
-        rounds = 10_000
+        rounds = 100_000
 
         c1 = np.array(['[apple"]', '[banana"]'] * 5, dtype="U")  # str
         c2 = np.array([i for i in range(10)], dtype=np.float64)  # float

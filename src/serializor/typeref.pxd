@@ -11,7 +11,7 @@ cdef:
     object UINT8, UINT16, UINT32, UINT64
     object COMPLEX64, COMPLEX128
     object DATETIME64, TIMEDELTA64
-    object BOOL_, BYTES_, NAN, RECORD
+    object STR_, BOOL_, BYTES_, RECORD
     # . pandas types
     object SERIES, DATAFRAME
     object TIMESTAMP, DATETIMEINDEX

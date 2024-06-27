@@ -57,7 +57,7 @@ cdef:
 
 # Numpy.ndarray
 cdef:
-    np.ndarray arr
+    np.ndarray _arr
     str NDARRAY
     str NDARRAY_DTYPE_OBJECT, NDARRAY_DTYPE_FLOAT
     str NDARRAY_DTYPE_INT, NDARRAY_DTYPE_UINT, NDARRAY_DTYPE_BOOL
