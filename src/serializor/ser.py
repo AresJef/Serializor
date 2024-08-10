@@ -2253,9 +2253,6 @@ def _serialize_uncommon_type(obj: object, dtype: type) -> str:
     # . <'time.struct_time'>`
     if dtype is typeref.STRUCT_TIME:
         return _serialize_struct_time(obj)
-    # . <'cytimes.pydt'>
-    if dtype is typeref.PYDT:
-        return _serialize_datetime(obj.dt)
 
     # Numeric Types
     # . <'decimal.Decimal'>
@@ -2278,7 +2275,7 @@ def _serialize_uncommon_type(obj: object, dtype: type) -> str:
     # . <'numpy.bytes_'>
     if dtype is typeref.BYTES_:
         return _serialize_bytes(obj)
-    
+
     # String Types:
     # . <'numpy.str_'>
     if dtype is typeref.STR_:
@@ -2316,9 +2313,15 @@ def _serialize_uncommon_type(obj: object, dtype: type) -> str:
     # . <'pandas.TimedeltaIndex'>
     if dtype is typeref.TIMEDELTAINDEX:
         return _serialize_timedelta_index(obj)
-    # . <'cytimes.pddt'>
-    if dtype is typeref.PDDT:
-        return _serialize_series(obj.dt)
+
+    # Cytimes Types
+    if typeref.CYTIMES_AVAILABLE:
+        # . <'cytimes.pydt'>
+        if dtype is typeref.PYDT:
+            return _serialize_datetime(obj.dt)
+        # . <'cytimes.pddt'>
+        if dtype is typeref.PDDT:
+            return _serialize_series(obj.dt)
 
     ##### Subclass Types #####
     return _serialize_subclass(obj, dtype)

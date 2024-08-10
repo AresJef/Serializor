@@ -16,6 +16,7 @@ cdef:
     object SERIES, DATAFRAME
     object TIMESTAMP, DATETIMEINDEX
     object TIMEDELTA, TIMEDELTAINDEX
-    # . cytimes
-    object PDDT, PYDT
+    # . cytimes types
+    bint CYTIMES_AVAILABLE
+    object PYDT, PDDT
     

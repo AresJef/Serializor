@@ -1,5 +1,8 @@
 # cython: language_level=3
 
+# Cython imports
+import cython
+
 # Python imports
 import numpy as np
 from decimal import Decimal
@@ -7,7 +10,6 @@ from time import struct_time
 from pandas import Series, DataFrame
 from pandas import Timestamp, DatetimeIndex
 from pandas import Timedelta, TimedeltaIndex
-from cytimes import pddt, pydt
 
 # Constants -------------------------------------------------------------------------
 # . python types
@@ -43,6 +45,14 @@ TIMESTAMP: type[Timestamp] = Timestamp
 DATETIMEINDEX: type[DatetimeIndex] = DatetimeIndex
 TIMEDELTA: type[Timedelta] = Timedelta
 TIMEDELTAINDEX: type[TimedeltaIndex] = TimedeltaIndex
-# . cytimes
-PDDT: type[pddt] = pddt
-PYDT: type[pydt] = pydt
+# . cytimes types
+try:
+    from cytimes import pydt, pddt
+
+    CYTIMES_AVAILABLE: cython.bint = True
+    PYDT: type[pydt] = pydt
+    PDDT: type[pddt] = pddt
+except ImportError:
+    CYTIMES_AVAILABLE: cython.bint = False
+    PYDT: type[pydt] = None
+    PDDT: type[pydt] = None
