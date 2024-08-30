@@ -6,26 +6,23 @@ from serializor.crypto import encrypt, decrypt
 from serializor.errors import (
     SerializorError,
     SerializeError,
-    SerializeTypeError,
     DeserializeError,
-    DeserializeValueError,
     CryptoError,
-    CryptoTypeError,
+    EncryptError,
+    DecryptError,
 )
 
 __all__ = [
-    # functions
+    # function
     "serialize",
     "deserialize",
     "encrypt",
     "decrypt",
-    # errors
+    # error
     "SerializorError",
     "SerializeError",
-    "SerializeTypeError",
     "DeserializeError",
-    "DeserializeValueError",
     "CryptoError",
-    "CryptoTypeError",
+    "EncryptError",
+    "DecryptError",
 ]
-(serialize, deserialize, encrypt, decrypt)  # pyflakes

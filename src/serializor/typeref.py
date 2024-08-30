@@ -7,6 +7,7 @@ import cython
 import numpy as np
 from decimal import Decimal
 from time import struct_time
+from collections import deque
 from pandas import Series, DataFrame
 from pandas import Timestamp, DatetimeIndex
 from pandas import Timedelta, TimedeltaIndex
@@ -16,8 +17,10 @@ from pandas import Timedelta, TimedeltaIndex
 NONE: type = type(None)
 DICT_KEYS: type = type(dict().keys())
 DICT_VALUES: type = type(dict().values())
+DICT_ITEMS: type = type(dict().items())
 DECIMAL: type[Decimal] = Decimal
 STRUCT_TIME: type[struct_time] = struct_time
+DEQUE: type[deque] = deque
 # . numpy types
 FLOAT16: type[np.float16] = np.float16
 FLOAT32: type[np.float32] = np.float32
@@ -41,9 +44,9 @@ RECORD: type[np.record] = np.record
 # . pandas types
 SERIES: type[Series] = Series
 DATAFRAME: type[DataFrame] = DataFrame
-TIMESTAMP: type[Timestamp] = Timestamp
+PD_TIMESTAMP: type[Timestamp] = Timestamp
+PD_TIMEDELTA: type[Timedelta] = Timedelta
 DATETIMEINDEX: type[DatetimeIndex] = DatetimeIndex
-TIMEDELTA: type[Timedelta] = Timedelta
 TIMEDELTAINDEX: type[TimedeltaIndex] = TimedeltaIndex
 # . cytimes types
 try:
