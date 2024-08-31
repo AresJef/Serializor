@@ -1,826 +1,712 @@
-import time
-from timeit import timeit
+import time, unittest, datetime
 from decimal import Decimal
 from zoneinfo import ZoneInfo
-import datetime, numpy as np, pandas as pd
-from json import dumps as json_dumps, loads as json_loads
-from orjson import dumps as orjson_dumps, loads as orjson_loads, OPT_SERIALIZE_NUMPY
-from serializor.ser import serialize
-from serializor.des import deserialize
-from serializor.crypto import encrypt, decrypt
+import numpy as np, pandas as pd
 
 
-def diff(base_t: float, comp_t: float) -> str:
-    """Calculate performance difference."""
-    if base_t < comp_t:
-        res = (comp_t - base_t) / base_t
-    else:
-        res = -(base_t - comp_t) / comp_t
-    return ("" if res < 0 else "+") + f"{res:.6f}x"
+class TestCase(unittest.TestCase):
+    name: str = "Case"
+    # fmt: off
+    data = {
+        "str": "Hello World!\n中国\n한국어\nにほんご\nEspañol",
+        "int": 1234567890,
+        "float": 3.141592653589793,
+        "bool": True,
+        "none": None,
+        "datetime": datetime.datetime(2012, 1, 2, 3, 4, 5, 6),
+        "datetime.tz1": datetime.datetime.now(datetime.timezone.utc),
+        "datetime.tz2": datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=9))),
+        "date": datetime.date(2012, 1, 2),
+        "time": datetime.time(3, 4, 5, 6),
+        "timedelta": datetime.timedelta(1, 2, 3),
+        "decimal": Decimal("3.1234"),
+        "complex": 2.12345 + 3.12345j,
+        "bytes": "Hello World!\n中国\n한국어\nにほんご\nEspañol".encode("utf-8"),
+        "datetime64": np.datetime64("2012-06-30 12:00:00.000000010"),
+        "timedelta64": np.timedelta64(-datetime.timedelta(1, 2, 3)),
+        "complex64": np.complex64(1 + 1j),
+        "complex128": np.complex128(-1 + -1j),
+    }
+    # fmt: on
+
+    def test_all(self) -> None:
+        pass
+
+    # Utils
+    def log_start(self, msg: str) -> None:
+        msg = "START TEST '%s': %s" % (self.name, msg)
+        print(msg.ljust(60), end="\r")
+        self._start_time = time.perf_counter()
+
+    def log_ended(self, msg: str, skip: bool = False) -> None:
+        self._ended_time = time.perf_counter()
+        msg = "%s TEST '%s': %s" % ("SKIP" if skip else "PASS", self.name, msg)
+        if self._start_time is not None:
+            msg += " (%.6fs)" % (self._ended_time - self._start_time)
+        print(msg.ljust(60))
 
 
-def benchmark_simple_object(
-    obj: object,
-    rounds: int,
-    mode: int = 0,
-    validate: bool = True,
-) -> None:
-    """Benchmark for simple python object."""
-    # Display ------------------------------------------------------
-    print(f" Benchmark for {type(obj)} ".center(100, "-"))
-    print(f"- OBJECT: {repr(obj)} {type(obj)}")
-    print()
+class Test_Ser_Des(TestCase):
+    name: str = "Ser/Des"
 
-    # Encodeing ----------------------------------------------------
-    print(f"[encode] - rounds:\t# {rounds:,}")
-    t_ser1 = timeit(lambda: serialize(obj), number=rounds)
-    r_ser1 = serialize(obj)
-    print(f"[encode] - serializor:\t{t_ser1:.9f}s")
-    if mode >= 1:
-        t_orjs = timeit(
-            lambda: orjson_dumps(obj, option=OPT_SERIALIZE_NUMPY), number=rounds
-        )
-        r_orjs = orjson_dumps(obj, option=OPT_SERIALIZE_NUMPY)
-        print(f"[encode] - orjson:\t{t_orjs:.9f}s\tdiff: {diff(t_ser1, t_orjs)}")
-    if mode >= 2:
-        t_json = timeit(lambda: json_dumps(obj), number=rounds)
-        r_json = json_dumps(obj)
-        print(f"[encode] - python.json:\t{t_json:.9f}s\tdiff: {diff(t_ser1, t_json)}")
-    print(f"- Serialized:\t{repr(r_ser1)}")
-    print()
+    def test_all(self) -> None:
+        self.test_str()
+        self.test_int()
+        self.test_float()
+        self.test_bool()
+        self.test_datetime()
+        self.test_date()
+        self.test_time()
+        self.test_timedelta()
+        self.test_struct_time()
+        self.test_decimal()
+        self.test_complex()
+        self.test_bytes()
+        self.test_sequence()
+        self.test_mapping()
+        self.test_ndarray_series()
+        self.test_series_like()
+        self.test_dataframe()
 
-    # Decodeing ----------------------------------------------------
-    print(f"[decode] - rounds:\t# {rounds:,}")
-    t_des1 = timeit(lambda: deserialize(r_ser1), number=rounds)
-    r_des1 = deserialize(r_ser1)
-    print(f"[decode] - serializor:\t{t_des1:.9f}s")
-    if mode >= 1:
-        t_orjs = timeit(lambda: orjson_loads(r_orjs), number=rounds)
-        r_orjs = orjson_loads(r_orjs)
-        print(f"[decode] - orjson:\t{t_orjs:.9f}s\tdiff: {diff(t_des1, t_orjs)}")
-    if mode >= 2:
-        t_json = timeit(lambda: json_loads(r_json), number=rounds)
-        r_json = json_loads(r_json)
-        print(f"[decode] - python.json:\t{t_json:.9f}s\tdiff: {diff(t_des1, t_json)}")
-    print(f"- Deserialized:\t{type(r_des1)}\n{repr(r_des1)} ")
-    print()
+    def test_str(self) -> None:
+        test = "STR"
+        self.log_start(test)
 
-    # Validate -----------------------------------------------------
-    print("- EQUALS:", eq := obj == r_des1)
-    if validate:
-        assert eq
-    print()
+        for val in ("Hello World!", "中文", "한국어", "にほんご", "Español"):
+            for dtype in (str, np.str_):
+                se = serialize(dtype(val))
+                de = deserialize(se)
+                self.assertEqual(str(val), de)
 
+        self.log_ended(test)
 
-def benchmark_sequence(
-    obj: object,
-    rounds: int,
-    mode: int = 0,
-    validate: bool = True,
-    debug: bool = True,
-) -> None:
-    """Benchmark for python sequence."""
-    # Data types ---------------------------------------------------
-    dtypes = {type(i) for i in obj}
-    if (length := len(dtypes)) == 1:
-        dtype = dtypes.pop()
-    elif length == 0:
-        dtype = "empty"
-    elif (
-        dict in dtypes
-        or list in dtypes
-        or set in dtypes
-        or tuple in dtypes
-        or np.ndarray in dtypes
-        or pd.Series in dtypes
-        or pd.DataFrame in dtypes
-    ):
-        dtype = "nested"
-    else:
-        dtype = "mixed"
+    def test_int(self) -> None:
+        test = "INT"
+        self.log_start(test)
 
-    # Display ------------------------------------------------------
-    print(f" Benchmark for {type(obj)}[{dtype}] ".center(100, "-"))
-    print(f"- OBJECT: {type(obj)}\n{repr(obj)}")
-    print()
+        # Signed Int
+        for val in (-1, 0, 1):
+            for dtype in (int, np.int8, np.int16, np.int32, np.int64):
+                se = serialize(dtype(val))
+                de = deserialize(se)
+                self.assertEqual(int(val), de)
 
-    # Encodeing ----------------------------------------------------
-    print(f"[encode] - rounds:\t# {rounds:,}")
-    t_ser1 = timeit(lambda: serialize(obj), number=rounds)
-    r_ser1 = serialize(obj)
-    print(f"[encode] - serializor:\t{t_ser1:.9f}s")
-    if mode >= 1:
-        t_orjs = timeit(
-            lambda: orjson_dumps(obj, option=OPT_SERIALIZE_NUMPY), number=rounds
-        )
-        r_orjs = orjson_dumps(obj, option=OPT_SERIALIZE_NUMPY)
-        print(f"[encode] - orjson:\t{t_orjs:.9f}s\tdiff: {diff(t_ser1, t_orjs)}")
-    if mode >= 2:
-        t_json = timeit(lambda: json_dumps(obj), number=rounds)
-        r_json = json_dumps(obj)
-        print(f"[encode] - python.json:\t{t_json:.9f}s\tdiff: {diff(t_ser1, t_json)}")
-    if debug:
-        print(f"- Serialized:\n{repr(r_ser1)}")
-    print()
+        # Unsigned Int
+        for val in (0, 1):
+            for dtype in (np.uint8, np.uint16, np.uint32, np.uint64):
+                se = serialize(dtype(val))
+                de = deserialize(se)
+                self.assertEqual(int(val), de)
 
-    # Decodeing ----------------------------------------------------
-    print(f"[decode] - rounds:\t# {rounds:,}")
-    t_des1 = timeit(lambda: deserialize(r_ser1), number=rounds)
-    r_des1 = deserialize(r_ser1)
-    print(f"[decode] - serializor:\t{t_des1:.9f}s")
-    if mode >= 1:
-        t_orjs = timeit(lambda: orjson_loads(r_orjs), number=rounds)
-        r_orjs = orjson_loads(r_orjs)
-        print(f"[decode] - orjson:\t{t_orjs:.9f}s\tdiff: {diff(t_des1, t_orjs)}")
-    if mode >= 2:
-        t_json = timeit(lambda: json_loads(r_json), number=rounds)
-        r_json = json_loads(r_json)
-        print(f"[decode] - python.json:\t{t_json:.9f}s\tdiff: {diff(t_des1, t_json)}")
-    if debug:
-        print(f"- Deserialized:\t{type(r_des1)}\n{repr(r_des1)} ")
-    print()
+        # Extreme
+        for val in (
+            -9223372036854775808,
+            -9223372036854775807,
+            0,
+            9223372036854775806,
+            9223372036854775807,
+            18446744073709551613,
+            18446744073709551614,
+            18446744073709551615,
+            18446744073709551615 * 1000,
+        ):
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
 
-    # Validate -----------------------------------------------------
-    print("- EQUALS:", eq := obj == r_des1)
-    if validate:
-        assert eq
-    print()
+        self.log_ended(test)
 
+    def test_float(self) -> None:
+        test = "FLOAT"
+        self.log_start(test)
 
-def benchmark_dict(
-    obj: dict,
-    rounds: int,
-    mode: int = 0,
-    validate: bool = True,
-    debug: bool = True,
-) -> None:
-    """Benchmark for python dict."""
-    # Data types ---------------------------------------------------
-    dtypes = {type(v) for v in obj.values()}
-    if (length := len(dtypes)) == 1:
-        dtype = dtypes.pop()
-    elif length == 0:
-        dtype = "empty"
-    elif (
-        dict in dtypes
-        or list in dtypes
-        or set in dtypes
-        or tuple in dtypes
-        or np.ndarray in dtypes
-        or pd.Series in dtypes
-        or pd.DataFrame in dtypes
-    ):
-        dtype = "nested"
-    else:
-        dtype = "mixed"
+        # Var-types
+        for val in (-1.1, 0, 1.1):
+            for dtype in (float, np.float16, np.float32, np.float64):
+                se = serialize(dtype(val))
+                de = deserialize(se)
+                self.assertEqual(float(val), de)
 
-    # Display ------------------------------------------------------
-    print(f" Benchmark for {type(obj)}[{dtype}] ".center(100, "-"))
-    print(f"- OBJECT: {type(obj)}\n{repr(obj)}")
-    print()
+        # Extreme
+        for val in (-2.718281828459045123, 3.141592653589793123):
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
 
-    # Encodeing ----------------------------------------------------
-    print(f"[encode] - rounds:\t# {rounds:,}")
-    t_ser1 = timeit(lambda: serialize(obj), number=rounds)
-    r_ser1 = serialize(obj)
-    print(f"[encode] - serializor:\t{t_ser1:.9f}s")
-    if mode >= 1:
-        t_orjs = timeit(
-            lambda: orjson_dumps(obj, option=OPT_SERIALIZE_NUMPY), number=rounds
-        )
-        r_orjs = orjson_dumps(obj, option=OPT_SERIALIZE_NUMPY)
-        print(f"[encode] - orjson:\t{t_orjs:.9f}s\tdiff: {diff(t_ser1, t_orjs)}")
-    if mode >= 2:
-        t_json = timeit(lambda: json_dumps(obj), number=rounds)
-        r_json = json_dumps(obj)
-        print(f"[encode] - python.json:\t{t_json:.9f}s\tdiff: {diff(t_ser1, t_json)}")
-    if debug:
-        print(f"- Serialized:\n{repr(r_ser1)}")
-    print()
+        # Infinity
+        for val in (float("inf"), float("-inf"), np.inf, -np.inf):
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
 
-    # Decodeing ----------------------------------------------------
-    print(f"[decode] - rounds:\t# {rounds:,}")
-    t_des1 = timeit(lambda: deserialize(r_ser1), number=rounds)
-    r_des1 = deserialize(r_ser1)
-    print(f"[decode] - serializor:\t{t_des1:.9f}s")
-    if mode >= 1:
-        t_orjs = timeit(lambda: orjson_loads(r_orjs), number=rounds)
-        r_orjs = orjson_loads(r_orjs)
-        print(f"[decode] - orjson:\t{t_orjs:.9f}s\tdiff: {diff(t_des1, t_orjs)}")
-    if mode >= 2:
-        t_json = timeit(lambda: json_loads(r_json), number=rounds)
-        r_json = json_loads(r_json)
-        print(f"[decode] - python.json:\t{t_json:.9f}s\tdiff: {diff(t_des1, t_json)}")
-    if debug:
-        print(f"- Deserialized:\t{type(r_des1)}\n{repr(r_des1)} ")
-    print()
+        # NaN
+        for val in (float("nan"), np.nan):
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertTrue(np.isnan(de))
 
-    # Validate -----------------------------------------------------
-    print("- EQUALS:", eq := obj == r_des1)
-    if validate:
-        assert eq
-    print()
+        self.log_ended(test)
 
+    def test_bool(self) -> None:
+        test = "BOOL"
+        self.log_start(test)
 
-def benchmark_ndarray(
-    obj: np.ndarray,
-    rounds: int,
-    mode: int = 0,
-    validate: bool = True,
-    debug: bool = True,
-) -> None:
-    """Benchmark for python sequence."""
-    # Display ------------------------------------------------------
-    print(f" Benchmark for {type(obj)}[{obj.dtype}] ".center(100, "-"))
-    print(f"- OBJECT: {type(obj)}[{obj.dtype}]\n{repr(obj)}")
-    print()
+        for val in (True, False):
+            for dtype in (bool, np.bool_):
+                se = serialize(dtype(val))
+                de = deserialize(se)
+                self.assertEqual(bool(val), de)
 
-    # Encodeing ----------------------------------------------------
-    print(f"[encode] - rounds:\t# {rounds:,}")
-    t_ser1 = timeit(lambda: serialize(obj), number=rounds)
-    r_ser1 = serialize(obj)
-    print(f"[encode] - serializor:\t{t_ser1:.9f}s")
-    if mode >= 1:
-        t_orjs = timeit(
-            lambda: orjson_dumps(obj, option=OPT_SERIALIZE_NUMPY), number=rounds
-        )
-        r_orjs = orjson_dumps(obj, option=OPT_SERIALIZE_NUMPY)
-        print(f"[encode] - orjson:\t{t_orjs:.9f}s\tdiff: {diff(t_ser1, t_orjs)}")
-    if mode >= 2:
-        t_json = timeit(lambda: json_dumps(obj), number=rounds)
-        r_json = json_dumps(obj)
-        print(f"[encode] - python.json:\t{t_json:.9f}s\tdiff: {diff(t_ser1, t_json)}")
-    if debug:
-        print(f"- Serialized:\n{repr(r_ser1)}")
-    print()
+        self.log_ended(test)
 
-    # Decodeing ----------------------------------------------------
-    print(f"[decode] - rounds:\t# {rounds:,}")
-    t_des1 = timeit(lambda: deserialize(r_ser1), number=rounds)
-    r_des1 = deserialize(r_ser1)
-    print(f"[decode] - serializor:\t{t_des1:.9f}s")
-    if mode >= 1:
-        t_orjs = timeit(lambda: orjson_loads(r_orjs), number=rounds)
-        r_orjs = orjson_loads(r_orjs)
-        print(f"[decode] - orjson:\t{t_orjs:.9f}s\tdiff: {diff(t_des1, t_orjs)}")
-    if mode >= 2:
-        t_json = timeit(lambda: json_loads(r_json), number=rounds)
-        r_json = json_loads(r_json)
-        print(f"[decode] - python.json:\t{t_json:.9f}s\tdiff: {diff(t_des1, t_json)}")
-    if debug:
-        print(f"- Deserialized:\t{type(r_des1)}\n{repr(r_des1)} ")
-    print()
+    def test_none(self) -> None:
+        test = "NONE"
+        self.log_start(test)
 
-    # Validate -----------------------------------------------------
-    print("- EQUALS:", eq := (obj == r_des1).all())
-    if validate:
-        assert eq
-    print()
+        se = serialize(None)
+        de = deserialize(se)
+        self.assertEqual(None, de)
 
+        self.log_ended(test)
 
-def benchmark_dataframe(
-    obj: np.ndarray,
-    rounds: int,
-    mode: int = 0,
-    validate: bool = True,
-    debug: bool = True,
-) -> None:
-    """Benchmark for python sequence."""
-    # Display ------------------------------------------------------
-    print(f" Benchmark for {type(obj)} ".center(100, "-"))
-    print(f"- OBJECT: {type(obj)}\n{repr(obj)}")
-    print()
+    def test_datetime(self) -> None:
+        from zoneinfo import ZoneInfo
 
-    # Encodeing ----------------------------------------------------
-    print(f"[encode] - rounds:\t# {rounds:,}")
-    t_ser1 = timeit(lambda: serialize(obj), number=rounds)
-    r_ser1 = serialize(obj)
-    print(f"[encode] - serializor:\t{t_ser1:.9f}s")
-    if mode >= 1:
-        t_orjs = timeit(
-            lambda: orjson_dumps(obj, option=OPT_SERIALIZE_NUMPY), number=rounds
-        )
-        r_orjs = orjson_dumps(obj, option=OPT_SERIALIZE_NUMPY)
-        print(f"[encode] - orjson:\t{t_orjs:.9f}s\tdiff: {diff(t_ser1, t_orjs)}")
-    if mode >= 2:
-        t_json = timeit(lambda: json_dumps(obj), number=rounds)
-        r_json = json_dumps(obj)
-        print(f"[encode] - python.json:\t{t_json:.9f}s\tdiff: {diff(t_ser1, t_json)}")
-    if debug:
-        print(f"- Serialized:\n{repr(r_ser1)}")
-    print()
+        test = "DATETIME"
+        self.log_start(test)
 
-    # Decodeing ----------------------------------------------------
-    print(f"[decode] - rounds:\t# {rounds:,}")
-    t_des1 = timeit(lambda: deserialize(r_ser1), number=rounds)
-    r_des1 = deserialize(r_ser1)
-    print(f"[decode] - serializor:\t{t_des1:.9f}s")
-    if mode >= 1:
-        t_orjs = timeit(lambda: orjson_loads(r_orjs), number=rounds)
-        r_orjs = orjson_loads(r_orjs)
-        print(f"[decode] - orjson:\t{t_orjs:.9f}s\tdiff: {diff(t_des1, t_orjs)}")
-    if mode >= 2:
-        t_json = timeit(lambda: json_loads(r_json), number=rounds)
-        r_json = json_loads(r_json)
-        print(f"[decode] - python.json:\t{t_json:.9f}s\tdiff: {diff(t_des1, t_json)}")
-    if debug:
-        print(f"- Deserialized:\t{type(r_des1)}\n{repr(r_des1)} ")
-    print()
+        # datetime
+        for val in [
+            datetime.datetime(1, 1, 2, 3, 4, 5),
+            datetime.datetime(2013, 1, 2, 3, 4, 5, 6),
+            datetime.datetime(9999, 1, 2, 3, 4, 5, 60000),
+        ]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+        self.assertEqual(type(de), datetime.datetime)
 
-    # Validate -----------------------------------------------------
-    print("- EQUALS:", eq := obj.equals(r_des1))
-    if validate:
-        assert eq
-    print()
+        # datetime with timezone
+        offset = datetime.timedelta(hours=9)
+        for val in [
+            # fmt: off
+            datetime.datetime.now(datetime.UTC),
+            datetime.datetime.now(ZoneInfo("CET")),
+            datetime.datetime(1970, 1, 2, 3, 4, 5, 6, datetime.timezone(offset), fold=0),
+            datetime.datetime(1970, 1, 2, 3, 4, 5, 6, datetime.timezone(offset), fold=1),
+            # fmt: on
+        ]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+        self.assertEqual(type(de), datetime.datetime)
 
+        # numpy.datetime64
+        for val, unit in [
+            (i, u)
+            for i in (-2, -1, 0, 1, 2)
+            for u in (
+                "Y",
+                "M",
+                "W",
+                "D",
+                "h",
+                "m",
+                "s",
+                "ms",
+                "us",
+                "ns",
+                "ps",
+                "fs",
+                "as",
+            )
+        ]:
+            se = serialize(np.datetime64(val, unit))
+            de = deserialize(se)
+            self.assertEqual(np.datetime64(val, unit), de)
 
-def benchmark() -> None:
-    timeit(lambda: orjson_dumps(1024), number=1_000_000)
+        # pandas.Timestamp w/o timezone
+        for val in [
+            pd.Timestamp(pd.Timestamp.min),
+            pd.Timestamp("2013-01-02 03:04:05"),
+            pd.Timestamp(pd.Timestamp.max),
+        ]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+        self.assertEqual(type(de), pd.Timestamp)
 
-    run_basic_types = 1
-    run_datetime_types = 1
-    run_numeric_types = 1
-    run_bytes_types = 1
-    run_list = 1
-    run_sequence_types = 1
-    run_dict = 1
-    run_ndarray = 1
-    run_series = 1
-    run_dataframe = 1
-    run_pdindex = 1
-    run_nested = 1
-    run_crypto = 1
+        # pandas.Timestamp w/t timezone
+        offset = datetime.timedelta(hours=9)
+        for val in [
+            pd.Timestamp(datetime.datetime.now(), tz="CET"),
+            pd.Timestamp(datetime.datetime.now(), tz=ZoneInfo("CET")),
+            pd.Timestamp(datetime.datetime.now(), tz=datetime.timezone(offset), fold=0),
+            pd.Timestamp(datetime.datetime.now(), tz=datetime.timezone(offset), fold=1),
+        ]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+        self.assertEqual(type(de), pd.Timestamp)
 
-    # Basic Types
-    if run_basic_types:
-        rounds = 1_000_000
+        self.log_ended(test)
 
-        benchmark_simple_object("Hello World", rounds, 2)  # `<str>`
-        benchmark_simple_object(np.str_("Hello World"), rounds, 2)  # `<str>`
-        benchmark_simple_object(3.1415926, rounds, 2)  # `<float>`
-        benchmark_simple_object(np.float64(-3.1415926), rounds, 2)  # `<np.float64>`
-        benchmark_simple_object(float("inf"), rounds, 2)  # `<float> inf`
-        benchmark_simple_object(float("nan"), rounds, 2, False)  # `<float> nan`
-        benchmark_simple_object(np.nan, rounds, 2, False)  # `<np.nan>`
-        benchmark_simple_object(1024, rounds, 2)  # `<int>`
-        benchmark_simple_object(np.int64(-1024), rounds, 1)  # `<np.int64>`
-        benchmark_simple_object(np.uint64(1024), rounds, 1)  # `<np.int64>`
-        benchmark_simple_object(True, rounds, 2)  # `<bool>`
-        benchmark_simple_object(None, rounds, 2)  # `<NoneType>`
+    def test_date(self) -> None:
+        test = "DATE"
+        self.log_start(test)
 
-    # Date&Time Types
-    if run_datetime_types:
-        rounds = 1_000_000
+        for val in [datetime.date(y, 1, 1) for y in range(1, 10000)]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+
+        self.log_ended(test)
+
+    def test_time(self) -> None:
+        test = "TIME"
+        self.log_start(test)
+
+        # Time w/o timezone
+        for val in [
+            datetime.time(1, 2, 3),
+            datetime.time(1, 2, 3, 4),
+            datetime.time(1, 2, 3, 40),
+            datetime.time(1, 2, 3, 400),
+            datetime.time(1, 2, 3, 4000),
+            datetime.time(1, 2, 3, 40000),
+        ]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+        self.assertEqual(type(de), datetime.time)
+
+        # Time w/t timezone
+        offset = datetime.timedelta(hours=9)
+        for val in [
+            datetime.time(1, 2, 3, 4, datetime.UTC),
+            datetime.time(1, 2, 3, 4, ZoneInfo("CET")),
+            datetime.time(1, 2, 3, 4, datetime.timezone(offset), fold=0),
+            datetime.time(1, 2, 3, 4, datetime.timezone(offset), fold=1),
+        ]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+        self.assertEqual(type(de), datetime.time)
+
+        self.log_ended(test)
+
+    def test_timedelta(self) -> None:
+        test = "TIMEDELTA"
+        self.log_start(test)
+
+        # datetime.timedelta
+        for val in [
+            datetime.timedelta(1, 2, 3),
+            datetime.timedelta(1, 2, 3, 4),
+            datetime.timedelta(1, 2, 3, 40),
+            datetime.timedelta(1, 2, 3, 400),
+            datetime.timedelta(1, 2, 3, 4000),
+            datetime.timedelta(1, 2, 3, 40000),
+            -datetime.timedelta(1, 2, 3),
+            -datetime.timedelta(1, 2, 3, 4),
+            -datetime.timedelta(1, 2, 3, 40),
+            -datetime.timedelta(1, 2, 3, 400),
+            -datetime.timedelta(1, 2, 3, 4000),
+            -datetime.timedelta(1, 2, 3, 40000),
+        ]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+        self.assertEqual(type(de), datetime.timedelta)
+
+        # numpy.timedelta64
+        for val, unit in [
+            (i, u)
+            for i in (-2, -1, 0, 1, 2)
+            for u in (
+                "Y",
+                "M",
+                "W",
+                "D",
+                "h",
+                "m",
+                "s",
+                "ms",
+                "us",
+                "ns",
+                "ps",
+                "fs",
+                "as",
+            )
+        ]:
+            se = serialize(np.timedelta64(val, unit))
+            de = deserialize(se)
+            self.assertEqual(np.timedelta64(val, unit), de)
+        self.assertEqual(type(de), np.timedelta64)
+
+        # pandas.Timedelta
+        for val in [
+            pd.Timedelta(pd.Timedelta.min),
+            pd.Timedelta("1 days 2 hours 3 minutes 4 seconds"),
+            pd.Timedelta(pd.Timedelta.max),
+        ]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+        self.assertEqual(type(de), pd.Timedelta)
+
+        self.log_ended(test)
+
+    def test_struct_time(self) -> None:
+        test = "STRUCT_TIME"
+        self.log_start(test)
+
+        value = time.localtime()
+        for val in [value, time.struct_time(value[:9])]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+            self.assertEqual(type(de), time.struct_time)
+            self.assertEqual(val.tm_zone, de.tm_zone)
+            self.assertEqual(val.tm_gmtoff, de.tm_gmtoff)
+
+        self.log_ended(test)
+
+    def test_decimal(self) -> None:
+        test = "DECIMAL"
+        self.log_start(test)
+
+        for val in [
+            Decimal("-1"),
+            Decimal("0"),
+            Decimal("1"),
+            Decimal(
+                "-3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408"
+            ),
+            Decimal(
+                "3.141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067982148086513282306647093844609550582231725359408"
+            ),
+        ]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+
+        self.log_ended(test)
+
+    def test_complex(self) -> None:
+        test = "COMPLEX"
+        self.log_start(test)
+
+        # complex
+        for i in (-1, 0, 1):
+            for j in (-1, 0, 1):
+                val = complex(i, j)
+                se = serialize(val)
+                de = deserialize(se)
+                self.assertEqual(val, de)
+
+        # numpy.complex_
+        for i in (-1, 0, 1):
+            for j in (-1, 0, 1):
+                for dtype in (np.complex64, np.complex128):
+                    val = dtype(complex(i, j))
+                    se = serialize(val)
+                    de = deserialize(se)
+                    self.assertEqual(val, de)
+
+        self.log_ended(test)
+
+    def test_bytes(self) -> None:
+        test = "BYTES"
+        self.log_start(test)
+
+        for val in [
+            b"Hello World!",
+            "中国".encode("utf8"),
+            "한국어".encode("utf8"),
+            "にほんご".encode("utf8"),
+            "Español".encode("utf8"),
+        ]:
+            for dtype in (bytes, bytearray, memoryview, np.bytes_):
+                se = serialize(dtype(val))
+                de = deserialize(se)
+                self.assertEqual(val, de)
+                if dtype is bytearray:
+                    self.assertEqual(type(de), bytearray)
+                else:
+                    self.assertEqual(type(de), bytes)
+        self.log_ended(test)
+
+    def test_sequence(self) -> None:
+        test = "SEQUENCE"
+        self.log_start(test)
+
+        # List & Tuple & Set & Frozenset
+        seq = self.data.values()
+        for seq in (self.data.values(), []):
+            for dtype in (list, tuple, set, frozenset):
+                val = dtype(seq)
+                se = serialize(val)
+                de = deserialize(se)
+                self.assertEqual(val, de)
+                self.assertEqual(type(val), type(de))
+        # . nested
+        for dtype in (list, tuple):
+            v = dtype(self.data.values())
+            val = dtype([v, v])
+            se = serialize(dtype(val))
+            de = deserialize(se)
+            self.assertEqual(val, de)
+
+        # Sequence dict.keys() & dict.values()
+        for val in (
+            self.data.keys(),
+            self.data.values(),
+            # . empty
+            dict().keys(),
+            dict().values(),
+        ):
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(list(val), de)
+
+        # Range
+        for val in (
+            range(100),
+            range(-100, 100),
+            range(2, 100, 2),
+            range(100, 1, -2),
+        ):
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val, de)
+            self.assertEqual(type(val), type(de))
+
+        self.log_ended(test)
+
+    def test_mapping(self) -> None:
+        from collections import OrderedDict
+
+        test = "MAPPING"
+        self.log_start(test)
+
+        # Dict & dict_items & OrderedDict [Fast]
+        for val in (self.data, self.data.items(), OrderedDict(self.data)):
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(self.data, de)
+        # . nested
+        val = [self.data, self.data]
+        se = serialize(val)
+        de = deserialize(se)
+        self.assertEqual(val, de)
+        val = {str(i): self.data for i in range(2)}
+        se = serialize(val)
+        de = deserialize(se)
+        self.assertEqual(val, de)
+
+        # Dict [uncommon keys]
+        val = {(k,): v for k, v in self.data.items()}
+        se = serialize(val)
+        de = deserialize(se)
+        self.assertEqual(val, de)
+
+        # . empty
+        for val in (dict(), dict().items(), OrderedDict()):
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(dict(), de)
+
+        self.log_ended(test)
+
+    def test_ndarray_series(self) -> None:
+        test = "NDARRAY & SERIES"
+        self.log_start(test)
 
         # fmt: off
-        benchmark_simple_object(
-            datetime.datetime(1970, 1, 1, 1, 1, 1, 1), rounds, 1)  # `<datetime.datetime>`
-        benchmark_simple_object(
-            datetime.datetime(1970, 1, 1, 1, 1, 1, 1, ZoneInfo("CET")), rounds, 1)  # `<datetime.datetime>` & tzinfo
-        benchmark_simple_object(
-            np.datetime64("1970-01-01 01:01:01.000001"), rounds, 1)  # `<np.datetime64>`
-        benchmark_simple_object(datetime.date(1970, 1, 1), rounds, 1) # `<datetime.date>`
-        benchmark_simple_object(datetime.time(1, 1, 1, 1), rounds, 1) # `<datetime.time>`
-        benchmark_simple_object(datetime.timedelta(1, 1, 1, 1, 1, 1, 1), rounds, 0) # `<datetime.timedelta>`
-        benchmark_simple_object(np.timedelta64(1024, "us"), rounds, 0) # `<np.timedelta64>`
-        benchmark_simple_object(
-            time.struct_time((1970, 1, 1, 1, 1, 1, 1, 1, 0)), rounds, 0, False) # `<time.struct_time>`
+        for l, dtype in [
+            (list(self.data.values()), "O"),  # Object: 'O'
+            *[([-1, 0, 1], d) for d in (np.int8, np.int16, np.int32, np.int64)],  # Integer: 'i'
+            *[([0, 1, 10], d) for d in (np.uint8, np.uint16, np.uint32, np.uint64)],  # Unsigned Integer: 'u'
+            *[([-1.1, 0, 1.1], d) for d in (np.float16, np.float32, np.float64)],  # Float: 'f'
+            ([True, False, False, True], np.bool_),  # Boolean: 'b'
+            *[([-2, -1, 0, 1, 2], d) for d in (
+                "datetime64[%s]" % u for u in (
+                    "Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ms", "ps", "fs", "as"))],  # Datetime64: 'M'
+            *[([-2, -1, 0, 1, 2], d) for d in (
+                "timedelta64[%s]" % u for u in (
+                    "Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ms", "ps", "fs", "as"))],  # Timedelta64 'm'
+            *[([1 + 1j, -1 + -1j], d) for d in (np.complex64, np.complex128)],  # Complex: 'c'
+            ([b"Hello", b"World", "你好".encode("utf8")], "S"),  # Bytes: 'S'
+            (["Hello", "World", "你好"], "U"),  # String: 'U'
+            # . empty
+            ([], "O"),  # Object: 'O'
+            *[([], d) for d in (np.int8, np.int16, np.int32, np.int64)],  # Integer: 'i'
+            *[([], d) for d in (np.uint8, np.uint16, np.uint32, np.uint64)],  # Unsigned Integer: 'u'
+            *[([], d) for d in (np.float16, np.float32, np.float64)],  # Float: 'f'
+            ([], np.bool_),  # Boolean: 'b'
+            *[([], d) for d in (
+                "datetime64[%s]" % u for u in (
+                    "Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ms", "ps", "fs", "as"))],  # Datetime64: 'M'
+            *[([], d) for d in (
+                "timedelta64[%s]" % u for u in (
+                    "Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ms", "ps", "fs", "as"))],  # Timedelta64 'm'
+            *[([], d) for d in (np.complex64, np.complex128)],  # Complex: 'c'
+            ([], "S"),  # Bytes: 'S'
+            ([], "U"),  # String: 'U'
+        ]:
+            # . 1-dimensional
+            arr = np.array(l, dtype=dtype)
+            se = serialize(arr)
+            de = deserialize(se)
+            self.assertTrue(np.array_equal(arr, de))
+            # . pd.Series
+            s = pd.Series(arr)
+            se = serialize(s)
+            de = deserialize(se)
+            self.assertTrue(s.equals(de))
+            # . 2-dimensional
+            arr = np.array([l, l], dtype=dtype)
+            se = serialize(arr)
+            de = deserialize(se)
+            self.assertTrue(np.array_equal(arr, de))
+            # . 3-dimensional
+            arr = np.array([[l, l], [l, l]], dtype=dtype)
+            se = serialize(arr)
+            de = deserialize(se)
+            self.assertTrue(np.array_equal(arr, de))
+            # . 4-dimensional
+            arr = np.array([[[l, l], [l, l]], [[l, l], [l, l]]], dtype=dtype)
+            se = serialize(arr)
+            de = deserialize(se)
+            self.assertTrue(np.array_equal(arr, de))
         # fmt: on
 
-    # Numeric Types
-    if run_numeric_types:
-        rounds = 1_000_000
+        self.log_ended(test)
 
-        benchmark_simple_object(Decimal("3.1415926"), rounds, 0)  # `<decimal.Decimal>`
-        benchmark_simple_object(1 + 1j, rounds, 0)  # `<complex>`
-        benchmark_simple_object(np.complex128(1 + 1j), rounds, 0)  # `<np.complex128>`
+    def test_series_like(self) -> None:
+        test = "SERIES LIKE"
+        self.log_start(test)
 
-    # Bytes Types
-    if run_bytes_types:
-        rounds = 1_000_000
+        # pd.DatetimeIndex
+        for name in [None, "", "s", b"", b"b", 1, 1.1]:
+            for val in [
+                # fmt: off
+                # . DatetimeIndex
+                pd.date_range("2021-01-01", periods=10, name=name),
+                pd.date_range("2021-01-01", periods=10, name=name, tz="CET"),
+                pd.date_range("2021-01-01", periods=10, name=name, tz=datetime.timezone.utc),
+                pd.date_range("2021-01-01", periods=10, name=name, tz=datetime.timezone(datetime.timedelta(hours=9))),
+                pd.DatetimeIndex([], name=name),
+                # . TimdeltaIndex
+                pd.timedelta_range("1 days", periods=10, name=name),
+                pd.TimedeltaIndex([], name=name),
+                # . Series Datetime
+                pd.Series(pd.date_range("2021-01-01", periods=10, name=name)),
+                pd.Series(pd.date_range("2021-01-01", periods=10, name=name, tz="CET")),
+                pd.Series(pd.date_range("2021-01-01", periods=10, name=name, tz=datetime.timezone.utc)),
+                pd.Series(pd.date_range("2021-01-01", periods=10, name=name, tz=datetime.timezone(datetime.timedelta(hours=9)))),
+                pd.Series([], name=name),
+                # fmt: on
+            ]:
+                se = serialize(val)
+                de = deserialize(se)
+                self.assertTrue(val.equals(de))
+                self.assertEqual(val.name, de.name)
+                self.assertEqual(type(val), type(de))
 
-        # fmt: off
-        val = b"serializor's bytes"
-        val = "中国".encode("utf-8")
-        benchmark_simple_object(val, rounds, 0) # `<bytes>`
-        benchmark_simple_object(bytearray(val), rounds, 0) # `<bytearray>`
-        benchmark_simple_object(memoryview(val), rounds, 0) # `<memoryview>`
-        benchmark_simple_object(np.bytes_(val), rounds, 0) # `<memoryview>`
-        # fmt: on
+        # pd.Series[datetime64]
+        for val in [
+            pd.Series(np.array([1, 2, 3], dtype="datetime64[%s]" % u))
+            for u in ["D", "h", "m", "s", "ms", "us", "ns"]
+        ]:
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertTrue(val.equals(de))
+            self.assertEqual(val.dtype, de.dtype)
+            self.assertEqual(type(val), type(de))
 
-    # List
-    if run_list:
-        rounds = 1_000_000
+        self.log_ended(test)
 
-        # fmt: off
-        benchmark_sequence([], rounds, 2)  # empty
-        obj = [i for i in range(10)]
-        benchmark_sequence([str(i) for i in obj], rounds, 2)  # `<str>`
-        benchmark_sequence([float(i) for i in obj], rounds, 2)  # `<float>`
-        benchmark_sequence([np.float64(i) for i in obj], rounds, 2) # `<np.float64>`
-        benchmark_sequence([int(i) for i in obj], rounds, 2)  # `<int>`
-        benchmark_sequence([np.int64(i) for i in obj], rounds, 1) # `<np.int64>`
-        benchmark_sequence([np.uint64(i) for i in obj], rounds, 1) # `<np.uint64>`
-        benchmark_sequence([bool(i) for i in obj], rounds, 2)  # `<bool>`
-        benchmark_sequence([None] * 10, rounds, 2)  # `<NoneType>`
-        obj = [datetime.datetime(1970, 1, 1, 1, 1, 1, 1)] * 10
-        benchmark_sequence(obj, rounds, 1) # `<datetime.datetime>`
-        obj = [datetime.datetime(1970, 1, 1, 1, 1, 1, 1, ZoneInfo("CET"))] * 10
-        benchmark_sequence(obj, rounds, 1, debug=False) # `<datetime.datetime>` & tzinfo
-        benchmark_sequence([datetime.date(1970, 1, 1)] * 10, rounds, 1) # `<datetime.date>`
-        benchmark_sequence([datetime.time(1, 1, 1, 1)] * 10, rounds, 1) # `<datetime.time>`
-        benchmark_sequence([datetime.timedelta(1, 2, 3)] * 10, rounds, 0) # `<datetime.timedelta>`
-        benchmark_sequence([Decimal("3.1415926")] * 10, rounds, 0)  # `<decimal.Decimal>`
-        benchmark_sequence([1 + 1j] * 10, rounds, 0)  # `<complex>`
-        benchmark_sequence([b"Hello"] * 10, rounds, 0)  # `<bytes>`
-        benchmark_sequence([bytearray(b"Hello")] * 10, rounds, 0) # `<bytearray>`
-        benchmark_sequence([memoryview(b"Hello")] * 10, rounds, 0) # `<memoryview>`
-        obj = [np.datetime64("1970-01-01 01:01:01.000001")] * 10
-        benchmark_sequence(obj, rounds, 1) # `<np.datetime64>`
-        obj = [np.timedelta64(1024, "us")] * 10
-        benchmark_sequence(obj, rounds, 0) # `<np.timedelta64>`
-        # fmt: on
-        obj = [
-            "serializor's string",
-            3.1415926,
-            np.float64(-3.1415926),
-            1024,
-            np.int64(-1024),
-            np.uint64(1024),
-            True,
-            None,
-            datetime.datetime(1970, 1, 1, 1, 1, 1, 1),
-            datetime.datetime(1970, 1, 1, 1, 1, 1, 1, ZoneInfo("CET")),
-            np.datetime64("1970-01-01 01:01:01.000001"),
-            datetime.date(1970, 1, 1),
-            datetime.time(1, 1, 1, 1),
-            datetime.timedelta(1, 1, 1, 1, 1, 1, 1),
-            np.timedelta64(1024, "us"),
-            Decimal("3.1415926"),
-            1 + 1j,
-            np.complex128(1 + 1j),
-            b"serializor's bytes",
-            bytearray(b"serializor's bytes"),
-            memoryview(b"serializor's bytes"),
-        ]
-        benchmark_sequence(obj, rounds, 0)  # mixed
-        obj = [obj] * 10
-        benchmark_sequence(obj, int(rounds / 10), 0, debug=False)  # nested
+    def test_dataframe(self) -> None:
+        test = "DATAFRAME"
+        self.log_start(test)
 
-    # Sequence Types
-    if run_sequence_types:
-        rounds = 1_000_000
-
-        obj = [
-            "serializor's string",
-            3.1415926,
-            np.float64(-3.1415926),
-            1024,
-            np.int64(-1024),
-            np.uint64(1024),
-            True,
-            datetime.datetime(1970, 1, 1, 1, 1, 1, 1),
-            datetime.datetime(1970, 1, 1, 1, 1, 1, 1, ZoneInfo("CET")),
-            np.datetime64("1970-01-01 01:01:01.000001"),
-            datetime.date(1970, 1, 1),
-            datetime.time(1, 1, 1, 1),
-            datetime.timedelta(1, 1, 1, 1, 1, 1, 1),
-            np.timedelta64(1024, "us"),
-            Decimal("3.1415926"),
-            1 + 1j,
-            np.complex128(1 + 1j),
-        ]
-        benchmark_sequence(tuple(), rounds, 2)  # empty
-        benchmark_sequence(set(), rounds, 0)  # empty
-        benchmark_sequence(frozenset(), rounds, 0)  # empty
-        benchmark_sequence({}.keys(), rounds, 0, False)  # empty
-        benchmark_sequence(tuple(obj), rounds, 0)  # `<tuple>`
-        benchmark_sequence(set(obj), rounds, 0)  # `<set>`
-        benchmark_sequence(frozenset(obj), rounds, 0)  # `<frozenset>`
-        benchmark_sequence(
-            {i: v for i, v in enumerate(obj)}.values(), rounds, 0, False, False
-        )  # `<dick_values>`
-
-    # Dict
-    if run_dict:
-        rounds = 1_000_000
-
-        # fmt: off
-        benchmark_dict({}, rounds, 2)  # `<str>`
-        obj = {str(i): i for i in range(10)}
-        benchmark_dict({k: str(v) for k, v in obj.items()}, rounds, 2)  # `<str>`
-        benchmark_dict({k: float(v) for k, v in obj.items()}, rounds, 2)  # `<float>`
-        benchmark_dict({k: np.float64(v) for k, v in obj.items()}, rounds, 2)  # `<np.float64>`
-        benchmark_dict({k: int(v) for k, v in obj.items()}, rounds, 2)  # `<int>`
-        benchmark_dict({k: np.int64(v) for k, v in obj.items()}, rounds, 1)  # `<np.int64>`
-        benchmark_dict({k: np.uint64(v) for k, v in obj.items()}, rounds, 1)  # `<np.uint64>`
-        benchmark_dict({k: bool(v) for k, v in obj.items()}, rounds, 2)  # `<bool>`
-        benchmark_dict({k: None for k, v in obj.items()}, rounds, 2)  # `<NoneType>`
-        obj = {k: datetime.datetime(1970, 1, 1, 1, 1, 1, 1) for k in obj}
-        benchmark_dict(obj, rounds, 1)  # `<datetime.datetime>`
-        obj = {k: datetime.datetime(1970, 1, 1, 1, 1, 1, 1, ZoneInfo("CET")) for k in obj}
-        benchmark_dict(obj, rounds, 1, debug=False)  # `<datetime.datetime>` & tzinfo
-        benchmark_dict({k: datetime.date(1970, 1, 1) for k in obj}, rounds, 1)  # `<datetime.date>`
-        benchmark_dict({k: datetime.time(1, 1, 1, 1) for k in obj}, rounds, 1)  # `<datetime.time>`
-        benchmark_dict({k: datetime.timedelta(1, 2, 3) for k in obj}, rounds, 0)  # `<datetime.timedelta>`
-        benchmark_dict({k: Decimal("3.1415926") for k in obj}, rounds, 0)  # `<datetime.Decimal>`
-        benchmark_dict({k: 1 + 1j for k in obj}, rounds, 0)  # `<complex>`
-        benchmark_dict({k: b"Hello" for k in obj}, rounds, 0)  # `<bytes>`
-        benchmark_dict({k: bytearray(b"Hello") for k in obj}, rounds, 0)  # `<bytearray>`
-        benchmark_dict({k: memoryview(b"Hello") for k in obj}, rounds, 0)  # `<memoryview>`
-        obj = {k: np.datetime64("1970-01-01 01:01:01.000001") for k in obj}
-        benchmark_dict(obj, rounds, 1)  # `<np.datetime64>`
-        obj = {k: np.timedelta64(1024, "us") for k in obj}
-        benchmark_dict(obj, rounds, 0)  # `<np.timedelta64>`
-        # fmt: on
-        obj = {
-            "strx": ["apple's|banana's|\"apple\"'s|" for i in range(10)],
-            "str": [str(i) for i in range(10)],
-            "float": [float(i) for i in range(10)],
-            "np.float64": [np.float64(i) for i in range(10)],
-            "int": [i for i in range(10)],
-            "np.int64": [np.int64(i) for i in range(10)],
-            "np.uint64": [np.uint64(i) for i in range(10)],
-            "bool": [bool(i) for i in range(10)],
-            "None": [None] * 10,
-            "datetime": [datetime.datetime(1970, 1, 1, 1, 1, 1, 1) for _ in range(10)],
-            "datetime_tz": [
-                datetime.datetime(1970, 1, 1, 1, 1, 1, 1, ZoneInfo("CET"))
-                for _ in range(10)
-            ],
-            "np.datetime64": [
-                np.datetime64("1970-01-01 01:01:01.000001") for _ in range(10)
-            ],
-            "date": [datetime.date(1970, 1, 1) for _ in range(10)],
-            "time": [datetime.time(1, 1, 1, 1) for _ in range(10)],
-            "timedelta": [datetime.timedelta(1, 1, 1, 1, 1, 1, 1) for _ in range(10)],
-            "np.timedelta64": [np.timedelta64(1024, "us") for _ in range(10)],
-            "decimal": [Decimal("3.1415926") for _ in range(10)],
-            "complex": [1 + 1j for _ in range(10)],
-            "np.complex128": [np.complex128(1 + 1j) for _ in range(10)],
-            "bytes": [b"serializor's bytes" for _ in range(10)],
-            "bytearray": [bytearray(b"serializor's bytes") for _ in range(10)],
-            "memoryview": [memoryview(b"serializor's bytes") for _ in range(10)],
-        }
-        benchmark_dict(obj, 100_000, 0, debug=False)  # nested
-
-    # Numpy Types
-    if run_ndarray:
-        rounds = 100_000
-
-        # fmt: off
-        benchmark_ndarray(np.array([], dtype="U"), rounds, 0)  # empty str
-        benchmark_ndarray(np.array([], dtype=np.float64), rounds, 0)  # empty float
-        benchmark_ndarray(np.array([], dtype=np.int64), rounds, 0)  # empty int
-        benchmark_ndarray(np.array([], dtype=np.uint64), rounds, 0)  # empty uint
-        benchmark_ndarray(np.array([], dtype=np.bool_), rounds, 0)  # empty bool
-        benchmark_ndarray(np.array([], dtype="datetime64[s]"), rounds, 0)  # empty datetime64
-        benchmark_ndarray(np.array([], dtype="timedelta64[s]"), rounds, 0)  # empty timedelta64
-        benchmark_ndarray(np.array([], dtype=np.complex128), rounds, 0)  # empty complex128
-        benchmark_ndarray(np.array([], dtype="S"), rounds, 0)  # empty bytes
-        benchmark_ndarray(np.array([], dtype="O"), rounds, 0)  # empty object
-        l = ['[apple"]', '[banana"]'] * 5
-        benchmark_ndarray(np.array([l, l], dtype="U"), rounds, 0)  # `<np.ndarray>` str
-        l = [i for i in range(100)]
-        benchmark_ndarray(np.array([l, l], dtype=np.float32), rounds, 1)  # `<np.ndarray>` float32
-        benchmark_ndarray(np.array([l, l], dtype=np.float64), rounds, 1)  # `<np.ndarray>` float64
-        benchmark_ndarray(np.array([l, l], dtype=np.int64), rounds, 1)  # `<np.ndarray>` int
-        benchmark_ndarray(np.array([l, l], dtype=np.uint64), rounds, 1)  # `<np.ndarray>` uint
-        benchmark_ndarray(np.array([l, l], dtype=np.bool_), rounds, 1)  # `<np.ndarray>` bool
-        l = [np.datetime64(f"%d-01-02 03:04:05.0006007" % i) for i in range(1970, 1980)]
-        benchmark_ndarray(np.array([l, l], dtype="M"), rounds, 1)  # `<np.ndarray>` datetime64
-        l = [np.timedelta64(1, "D") for _ in range(10)]
-        benchmark_ndarray(np.array(l, dtype="m"), rounds, 0)  # `<np.ndarray>` timedelta64
-        l = [1 + 1j for _ in range(10)]
-        benchmark_ndarray(np.array([l, l], dtype=np.complex128), rounds, 0)  # `<np.ndarray>` complex128
-        l = [b'[apple"]' for _ in range(10)]
-        benchmark_ndarray(np.array([l, l], dtype="S"), rounds, 0)  # `<np.ndarray>` bytes
-        l = [1, 1.234, True, Decimal("3.14"), '[apple"]'] * 2
-        benchmark_ndarray(np.array([l, l]), rounds, 0)  # `<np.ndarray>` mixed
-        # fmt: on
-
-    # Pandas Series
-    if run_series:
-        rounds = 100_000
-
-        # fmt: off
-        benchmark_ndarray(pd.Series(np.array([], dtype="U")), rounds, 0)  # empty str
-        benchmark_ndarray(pd.Series(np.array([], dtype=np.float64)), rounds, 0)  # empty float
-        benchmark_ndarray(pd.Series(np.array([], dtype=np.int64)), rounds, 0)  # empty int
-        benchmark_ndarray(pd.Series(np.array([], dtype=np.uint64)), rounds, 0)  # empty uint
-        benchmark_ndarray(pd.Series(np.array([], dtype=np.bool_)), rounds, 0)  # empty bool
-        benchmark_ndarray(pd.Series(np.array([], dtype="datetime64[s]")), rounds, 0)  # empty datetime64
-        benchmark_ndarray(pd.Series(np.array([], dtype="timedelta64[s]")), rounds, 0)  # empty timedelta64
-        benchmark_ndarray(pd.Series(np.array([], dtype=np.complex128)), rounds, 0)  # empty complex128
-        benchmark_ndarray(pd.Series(np.array([], dtype="S")), rounds, 0)  # empty bytes
-        benchmark_ndarray(pd.Series(np.array([], dtype="O")), rounds, 0)  # empty object
-        # fmt: on
-        obj = np.array(['[apple"]', '[banana"]'] * 5, dtype="U")
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` str
-        obj = np.array([i for i in range(10)], dtype=np.float16)
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` float16
-        obj = np.array([i for i in range(10)], dtype=np.float64)
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` float64
-        obj = np.array([i for i in range(10)], dtype=np.int64)
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` int
-        obj = np.array([i for i in range(10)], dtype=np.uint64)
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` uint
-        obj = np.array([i for i in range(10)], dtype=np.bool_)
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` bool
-        l = [np.datetime64(f"%d-01-02 03:04:05.0006007" % i) for i in range(1970, 1980)]
-        obj = np.array(l, dtype="M")
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` datetime64
-        obj = np.array([np.timedelta64(1, "D") for _ in range(10)], dtype="m")
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` timedelta64
-        obj = np.array([1 + 1j for _ in range(10)], dtype=np.complex128)
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` complex128
-        obj = np.array([b'[apple"]' for _ in range(10)], dtype="S")
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` bytes
-        obj = np.array([1, 1.234, True, Decimal("3.14"), '[apple"]'] * 2)
-        benchmark_ndarray(pd.Series(obj), rounds, 0)  # `<pd.Series>` mixed
-
-    # Pandas DataFrame
-    if run_dataframe:
-        rounds = 100_000
-
-        c1 = np.array(['[apple"]', '[banana"]'] * 5, dtype="U")  # str
-        c2 = np.array([i for i in range(10)], dtype=np.float64)  # float
-        c3 = np.array([i for i in range(10)], dtype=np.int64)  # int
-        c4 = np.array([i for i in range(10)], dtype=np.uint64)  # uint
-        c5 = np.array([i for i in range(10)], dtype=np.bool_)  # bool
-        l = [np.datetime64(f"%d-01-02 03:04:05.0006007" % i) for i in range(1970, 1980)]
-        c6 = np.array(l, dtype="M")  # datetime64
-        l = [np.timedelta64(1, "D") for _ in range(10)]
-        c7 = np.array(l, dtype="m")  # timedelta64
-        c8 = np.array([1 + 1j for _ in range(10)], dtype=np.complex128)  # complex128
-        c9 = np.array([b'[apple"]' for _ in range(10)], dtype="S")  # bytes
-        c0 = np.array([1, 1.234, True, Decimal("3.14"), '[apple"]'] * 2)  # mixed
-        obj = pd.DataFrame(
-            {
-                "str": c1,
-                "float": c2,
-                "int": c3,
-                "uint": c4,
-                "bool": c5,
-                "datetime": c6,
-                "timedelta": c7,
-                "complex": c8,
-                "bytes": c9,
-                "mixed": c0,
-            }
-        )
-        benchmark_dataframe(pd.DataFrame(), rounds, 0)  # `<pd.DataFrame>` empty
-        # fmt: off
-        benchmark_dataframe(pd.DataFrame(columns=list(obj)), rounds, 0)  # `<pd.DataFrame>` columns only
-        # fmt: on
-        benchmark_dataframe(obj, rounds, 0)  # `<pd.DataFrame>`
-
-    # Pandas Index
-    if run_pdindex:
-        rounds = 100_000
-
-        # fmt: off
-        obj = pd.DatetimeIndex(np.array([], dtype="datetime64[s]"))
-        benchmark_ndarray(obj, rounds, 0)  # `<pd.DatetimeIndex>` datetime64
-        l = [np.datetime64(f"%d-01-02 03:04:05.0006007" % i) for i in range(1970, 1980)]
-        obj = pd.DatetimeIndex(np.array(l, dtype="M"))
-        benchmark_ndarray(obj, rounds, 0)  # `<pd.DatetimeIndex>` datetime64
-        obj = pd.TimedeltaIndex(np.array([], dtype="timedelta64[s]"))
-        benchmark_ndarray(obj, rounds, 0)  # `<pd.TimedeltaIndex>` timedelta64
-        l = [np.timedelta64(1, "D") for _ in range(10)]
-        obj = pd.TimedeltaIndex(np.array(l, dtype="m"))
-        benchmark_ndarray(obj, rounds, 0)  # `<pd.TimedeltaIndex>` timedelta64
-
-    # Nested Objects
-    if run_nested:
-        print(" Validate nested objects ".center(100, "-"))
-        l = [1, 1.234, True, Decimal("3.14"), '[apple"]'] * 2
-        # list[list]
-        obj = [l] * 10
-        de = deserialize(serialize(obj))
-        eq = all([obj[i] == de[i] for i in range(len(obj))])
-        print("- list[list]\tEQUALS:", eq)
-        assert eq
-
-        # list[dict]
-        d = {str(i): l for i in range(10)}
-        obj = [d] * 10
-        de = deserialize(serialize(obj))
-        eq = all([obj[i] == de[i] for i in range(len(obj))])
-        print("- list[dict]\tEQUALS:", eq)
-        assert eq
-
-        # list[ndarray]
-        arr = np.array([l, l])
-        obj = [arr] * 10
-        de = deserialize(serialize(obj))
-        eq = all([(obj[i] == de[i]).all() for i in range(len(obj))])
-        print("- list[ndarray]\tEQUALS:", eq)
-        assert eq
-
-        # dict[np.ndarray]
-        obj = {str(i): arr for i in range(10)}
-        de = deserialize(serialize(obj))
-        eq = all([(obj[k] == de[k]).all() for k in obj])
-        print("- dict[ndarray]\tEQUALS:", eq)
-        assert eq
-
-        # list[Series]
-        ser = pd.Series(l)
-        obj = [ser] * 10
-        de = deserialize(serialize(obj))
-        eq = all([obj[i].equals(de[i]) for i in range(len(obj))])
-        print("- list[Series]\tEQUALS:", eq)
-        assert eq
-
-        # dict[Series]
-        obj = {str(i): ser for i in range(10)}
-        de = deserialize(serialize(obj))
-        eq = all([obj[k].equals(de[k]) for k in obj])
-        print("- dict[Series]\tEQUALS:", eq)
-        assert eq
-
-        # list[DataFrame]
-        c1 = np.array(['[apple"]', '[banana"]'] * 5, dtype="U")  # str
-        c2 = np.array([i for i in range(10)], dtype=np.float64)  # float
-        c3 = np.array([i for i in range(10)], dtype=np.int64)  # int
-        c4 = np.array([i for i in range(10)], dtype=np.uint64)  # uint
-        c5 = np.array([i for i in range(10)], dtype=np.bool_)  # bool
-        l = [np.datetime64(f"%d-01-02 03:04:05.0006007" % i) for i in range(1970, 1980)]
-        c6 = np.array(l, dtype="M")  # datetime64
-        l = [np.timedelta64(1, "D") for _ in range(10)]
-        c7 = np.array(l, dtype="m")  # timedelta64
-        c8 = np.array([1 + 1j for _ in range(10)], dtype=np.complex128)  # complex128
-        c9 = np.array([b'[apple"]' for _ in range(10)], dtype="S")  # bytes
-        c0 = np.array([1, 1.234, True, Decimal("3.14"), '[apple"]'] * 2)  # mixed
-        df = pd.DataFrame(
-            {
-                "str": c1,
-                "float": c2,
-                "int": c3,
-                "uint": c4,
-                "bool": c5,
-                "datetime": c6,
-                "timedelta": c7,
-                "complex": c8,
-                "bytes": c9,
-                "mixed": c0,
-            }
-        )
-        obj = [df] * 10
-        de = deserialize(serialize(obj))
-        eq = all([obj[i].equals(de[i]) for i in range(len(obj))])
-        print("- list[df]\tEQUALS:", eq)
-        assert eq
-
-        # dict[DataFrame]
-        obj = {str(i): df for i in range(10)}
-        de = deserialize(serialize(obj))
-        eq = all([obj[k].equals(de[k]) for k in obj])
-        print("- dict[df]\tEQUALS:", eq)
-        assert eq
-
-    # Encryption
-    if run_crypto:
-        print(" Validate Crypto ".center(100, "-"))
-        obj = [3.13, 1024, True, False, "apple", b"hello", 1 + 1j, None] * 10
-        key = "hello world's"
-        en = encrypt(obj, key)
-        de = decrypt(en, key)
-        eq = obj == de
-        print(" - Crypto EQUALS:", eq)
-        assert obj == de
+        df = pd.DataFrame({k: [v] * 10 for k, v in self.data.items()})
+        for val in (df, pd.DataFrame(columns=df.columns), pd.DataFrame()):
+            se = serialize(val)
+            de = deserialize(se)
+            self.assertEqual(val.columns.tolist(), de.columns.tolist())
+            self.assertTrue(val.equals(de))
+            self.assertEqual(type(val), type(de))
+        self.log_ended(test)
 
 
 if __name__ == "__main__":
-    benchmark()
+    # Test binary
+    print(" Test 'binary' ".center(80, "-"))
+    from serializor.binary.ser import serialize
+    from serializor.binary.des import deserialize
 
-    # ---------------------------------------------------------------------------------------------------
-    if False:
-        import pstats, cProfile
+    Test_Ser_Des().test_all()
+    print()
 
-        rounds = 1_000_000
-        obj = [None for i in range(10)]
+    # Test unicode
+    print(" Test 'unicode' ".center(80, "-"))
+    from serializor.unicode.ser import serialize
+    from serializor.unicode.des import deserialize
 
-        en = serialize(obj)
-        print(en)
-        cProfile.runctx(
-            "timeit(lambda: serialize(obj), number=rounds)",
-            globals(),
-            locals(),
-            "Profile.prof",
-        )
-        s = pstats.Stats("Profile.prof")
-        s.strip_dirs().sort_stats("time").print_stats()
-        print()
+    Test_Ser_Des().test_all()
+    print()
 
-        de = deserialize(en)
-        print(de)
-        cProfile.runctx(
-            "timeit(lambda: deserialize(en), number=rounds)",
-            globals(),
-            locals(),
-            "Profile.prof",
-        )
-        s = pstats.Stats("Profile.prof")
-        s.strip_dirs().sort_stats("time").print_stats()
+    # Test unifunction
+    print(" Test unifunction ".center(80, "-"))
+    from serializor.ser import serialize
+    from serializor.des import deserialize
+
+    obj = TestCase.data
+    se = serialize(obj, to_bytes=True)
+    assert type(se) is bytes
+    assert deserialize(se) == obj
+
+    se = serialize(obj, to_bytes=False)
+    assert type(se) is str
+    assert deserialize(se) == obj
+    print("* PASS")
+    print()
+
+    # Test encrypt/decrypt
+    print(" Test encrypt/decrypt ".center(80, "-"))
+    from serializor.crypto import encrypt, decrypt
+
+    obj = TestCase.data
+    key = "show me the money!"
+    en = encrypt(obj, key)
+    assert type(en) is bytes
+    assert decrypt(en, key) == obj
+    print("* PASS")
+    print()
+
+    # Test utils
+    print(" Test utils ".center(80, "-"))
+    from serializor.utils import _test_utils
+
+    _test_utils()
+
+    print(" Test utils 'binary' ".center(80, "-"))
+    from serializor.binary.ser import _test_utils
+
+    _test_utils()
+
+    from serializor.binary.des import _test_utils
+
+    _test_utils()
+
+    print(" Test utils 'unicode' ".center(80, "-"))
+    from serializor.unicode.ser import _test_utils
+
+    _test_utils()
+
+    from serializor.unicode.des import _test_utils
+
+    _test_utils()
