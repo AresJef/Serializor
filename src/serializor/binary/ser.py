@@ -2060,7 +2060,50 @@ def _ser_subclass(obj: object, obj_dtype: type) -> bytes:
 
 @cython.ccall
 def serialize(obj: object) -> bytes:
-    """Serialize object to `<'bytes'>`."""
+    """Serialize object to `<'bytes'>`.
+    
+    Supports:
+    - Python natives:
+        - Ser <'str'> -> Des <'str'>
+        - Ser <'int'> -> Des <'int'>
+        - Ser <'float'> -> Des <'float'>
+        - Ser <'bool'> -> Des <'bool'>
+        - Ser <'datetime.datetime'> -> Des <'datetime.datetime'> `[Supports Timezone]`
+        - Ser <'datetime.date'> -> Des <'datetime.date'>
+        - Ser <'datetime.time'> -> Des <'datetime.time'> `[Supports Timezone]`
+        - Ser <'datetime.timedelta'> -> Des <'datetime.timedelta'>
+        - Ser <'time.struct_time'> -> Des <'time.struct_time'>
+        - Ser <'decimal.Decimal'> -> Des <'decimal.Decimal'>
+        - Ser <'complex'> -> Des <'comples'>
+        - Ser <'bytes'> -> Des <'bytes'>
+        - Ser <'bytearray'> -> Des <'bytearray'>
+        - Ser <'memoryview'> -> Des <'bytes'>
+        - Ser <'list'> -> Des <'list'>
+        - Ser <'tuple'> -> Des <'tuple'>
+        - Ser <'set'> -> Des <'set'>
+        - Ser <'frozenset'> -> Des <'frozenset'>
+        - Ser <'range'> -> Des <'range'>
+        - Ser <'deque'> -> Des <'list'>
+        - Ser <'dict'> -> Des <'dict'>
+    - NumPy objects:
+        - Ser <'np.str\_'> -> Des <'str'>
+        - Ser <'np.int\*'> -> Des <'int'>
+        - Ser <'np.uint\*'> -> Des <'int'>
+        - Ser <'np.float\*'> -> Des <'float'>
+        - Ser <'np.bool\_'> -> Des <'bool'>
+        - Ser <'np.datetime64'> -> Des <'np.datetime64'>
+        - Ser <'np.timedelta64'> -> Des <'np.timedelta64'>
+        - Ser <'np.complex\*'> -> Des <'complex'>
+        - Ser <'np.bytes\_'> -> Des <'bytes'>
+        - Ser <'np.ndarray'> -> Des <'np.ndarray'> `[1-4 dimemsional]`
+    - Pandas objects:
+        - Ser <'pd.Timestamp'> -> Des <'pd.Timestamp'> `[Supports Timezone]`
+        - Ser <'pd.Timedelta'> -> Des <'pd.Timedelta'>
+        - Ser <'pd.Series'> -> Des <'pd.Series'>
+        - Ser <'pd.DatetimeIndex'> -> Des <'pd.DatetimeIndex'> `[Supports Timezone]`
+        - Ser <'pd.TimedeltaIndex'> -> Des <'pd.TimedeltaIndex'>
+        - Ser <'pd.DataFrame'> -> Des <'pd.DataFrame'>
+    """
     try:
         return _ser_common(obj)
     except Exception as err:
