@@ -18,6 +18,8 @@ from serializor.binary.ser import serialize as _ser_bin
 from serializor.binary.des import deserialize as _des_bin
 from serializor import errors
 
+__all__ = ["encrypt", "decrypt"]
+
 
 # Utils -----------------------------------------------------------------------------
 @cython.cfunc
