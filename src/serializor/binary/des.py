@@ -20,7 +20,7 @@ datetime.import_datetime()
 import numpy as np, datetime
 from zoneinfo import ZoneInfo
 from orjson import loads as _loads
-from serializor import identifier, typeref, errors
+from serializor import identifier, typeref, utils, errors
 
 __all__ = ["deserialize"]
 
@@ -1393,7 +1393,7 @@ def _des_data(data: cython.pchar, pos: cython.Py_ssize_t[1]) -> object:
 
 @cython.ccall
 def deserialize(data: bytes) -> object:
-    """Deserialize 'data' back to `<'object'>`."""
+    """Deserialize the data (bytes) back to an `<'object'>`."""
     try:
         eof: cython.Py_ssize_t = bytes_len(data)
         if eof == 0:

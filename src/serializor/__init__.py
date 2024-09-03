@@ -13,12 +13,12 @@ from serializor.errors import (
 )
 
 __all__ = [
-    # function
+    # functions
     "serialize",
     "deserialize",
     "encrypt",
     "decrypt",
-    # error
+    # errors
     "SerializorError",
     "SerializeError",
     "DeserializeError",

@@ -54,7 +54,7 @@ def _create_fernet(key: bytes) -> object:
 @cython.ccall
 def encrypt(obj: object, key: object) -> bytes:
     """Serialize and encrypt an object with the given 'key' into `<'bytes'>`.
-    
+
     :param obj `<'object'>`: The object to encrypt.
     :param key `<'object'>`: The key to encrypt the object with.
     """
@@ -71,16 +71,17 @@ def encrypt(obj: object, key: object) -> bytes:
 
 # Decrypt ----------------------------------------------------------------------------
 @cython.ccall
-def decrypt(enc: bytes, key: object) -> object:
-    """Decrypt and deserialize 'data' with the given 'key' back to an `<'object'>`.
-    
+def decrypt(data: bytes, key: object) -> object:
+    """Decrypt and deserialize encrypted data (bytes)
+    with the given 'key' back to an `<'object'>`.
+
     :param enc `<'bytes'>`: The encrypted data.
     :param key `<'object'>`: The key to decrypt the data with.
     """
     # Decrypt & Deserialize
     fernet: Fernet = _create_fernet(_ser_bin(key))
     try:
-        val = fernet.decrypt(enc)
+        val = fernet.decrypt(data)
     except Exception as err:
         raise errors.DecryptError(
             "<'Serializor'>\nData decryption failed: %s" % err

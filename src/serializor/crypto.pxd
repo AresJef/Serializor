@@ -4,4 +4,4 @@
 cpdef bytes encrypt(object obj, object key)
 
 # Decrypt
-cpdef object decrypt(bytes enc, object key)
+cpdef object decrypt(bytes data, object key)

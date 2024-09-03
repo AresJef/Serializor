@@ -16,8 +16,9 @@ __all__ = ["deserialize"]
 
 
 # Deserialize ---------------------------------------------------------------------------------
+@cython.ccall
 def deserialize(data: bytes | str) -> object:
-    """Deserialize 'data' (bytes/str) back to an `<'object'>`.
+    """Deserialize the data (bytes/str) back to an `<'object'>`.
 
     :param data `<'bytes/str'>`: The data to deserialize.
     """

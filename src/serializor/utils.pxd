@@ -1,4 +1,5 @@
 # cython: language_level=3
+
 from cpython.bytes cimport (
     PyBytes_Size as bytes_len,
     PyBytes_AsString as bytes_to_chars,
@@ -54,40 +55,20 @@ cdef inline object arr_getitem_1d(np.ndarray arr, np.npy_intp i):
     cdef void* itemptr = <void*>PyArray_GETPTR1(arr, i)
     return PyArray_GETITEM(arr, itemptr)
 
-cdef inline bint arr_getitem_1d_bint(np.ndarray arr, np.npy_intp i) except -1:
-    """Get item from 1-dimensional numpy ndarray as `<'bint'>`."""
-    cdef char* item = <char*>PyArray_GETPTR1(arr, i)
-    return item[0]
-
 cdef inline object arr_getitem_2d(np.ndarray arr, np.npy_intp i, np.npy_intp j):
     """Get item from 2-dimensional numpy ndarray as `<'object'>`."""
     cdef void* itemptr = <void*>PyArray_GETPTR2(arr, i, j)
     return PyArray_GETITEM(arr, itemptr)
-
-cdef inline bint arr_getitem_2d_bint(np.ndarray arr, np.npy_intp i, np.npy_intp j) except -1:
-    """Get item from 2-dimensional numpy ndarray as `<'bint'>`."""
-    cdef char* item = <char*>PyArray_GETPTR2(arr, i, j)
-    return item[0]
 
 cdef inline object arr_getitem_3d(np.ndarray arr, np.npy_intp i, np.npy_intp j, np.npy_intp k):
     """Get item from 3-dimensional numpy ndarray as `<'object'>`."""
     cdef void* itemptr = <void*>PyArray_GETPTR3(arr, i, j, k)
     return PyArray_GETITEM(arr, itemptr)
 
-cdef inline bint arr_getitem_3d_bint(np.ndarray arr, np.npy_intp i, np.npy_intp j, np.npy_intp k) except -1:
-    """Get item from 3-dimensional numpy ndarray as `<'bint'>`."""
-    cdef char* item = <char*>PyArray_GETPTR3(arr, i, j, k)
-    return item[0]
-
 cdef inline object arr_getitem_4d(np.ndarray arr, np.npy_intp i, np.npy_intp j, np.npy_intp k, np.npy_intp l):
     """Get item from 4-dimensional numpy ndarray as `<'object'>`."""
     cdef void* itemptr = <void*>PyArray_GETPTR4(arr, i, j, k, l)
     return PyArray_GETITEM(arr, itemptr)
-
-cdef inline bint arr_getitem_4d_bint(np.ndarray arr, np.npy_intp i, np.npy_intp j, np.npy_intp k, np.npy_intp l) except -1:
-    """Get item from 4-dimensional numpy ndarray as `<'bint'>`."""
-    cdef char* item = <char*>PyArray_GETPTR4(arr, i, j, k, l)
-    return item[0]
 
 # NumPy: ndarray set item
 cdef inline bint arr_setitem_1d(np.ndarray arr, object item, np.npy_intp i) except -1:
@@ -112,10 +93,11 @@ cdef inline bint arr_setitem_4d(np.ndarray arr, object item, np.npy_intp i, np.n
 
 # NumPy: ndarray flatten
 cdef inline np.ndarray arr_flatten(np.ndarray arr):
-    """Flatten multi-dimensional numpy ndarray into 1-dimension with 'c-order' `<'np.ndarray'>`."""
+    """Flatten multi-dimensional numpy ndarray into 
+    1-dimension with 'C-ORDER' `<'np.ndarray'>`."""
     return PyArray_Flatten(arr, NPY_ORDER.NPY_CORDER)
 
-# NumPy: nptime
+# NumPy: nptime unit
 cdef inline str map_nptime_unit_int2str(int unit):
     """Map ndarray[datetime64/timedelta64] time unit from integer
     to the corresponding string representation `<'str'>`."""
@@ -186,9 +168,9 @@ cdef inline int map_nptime_unit_str2int(str unit):
     #     return np.NPY_DATETIMEUNIT.NPY_FR_B
     raise ValueError("Unsupported numpy time unit: %s." % (unit))
 
-cdef inline int parse_arr_nptime_unit(arr: np.ndarray):
+cdef inline int parse_arr_nptime_unit(np.ndarray arr):
     """Parse numpy datetime64/timedelta64 time unit from the
-    given 'arr', returns unit in `<'int'>`."""
+    given 'arr', returns the unit in `<'int'>`."""
     cdef:
         str dtype_str = arr.dtype.str
         Py_ssize_t length = str_len(dtype_str)

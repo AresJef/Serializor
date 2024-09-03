@@ -2051,7 +2051,7 @@ def _ser_subclass(obj: object, obj_dtype: type) -> str:
 
 @cython.ccall
 def serialize(obj: object) -> str:
-    """Serialize object to `<'str'>`.
+    """Serialize an object to `<'str'>`.
     
     Supports:
     - Python natives:

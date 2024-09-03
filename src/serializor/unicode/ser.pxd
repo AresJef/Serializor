@@ -61,7 +61,7 @@ cdef:
 
 # Utils: Pack unsigned integers
 cdef inline str pack_uint8(unsigned int value):
-    """Pack unsigned 8-bit integer in little-endian order to `<'str'>`.
+    """Pack `UNSIGNED` 8-bit integer in little-endian order to `<'str'>`.
 
     Equivalent to:
     >>> struct.pack("<B", value).decode("latin1")
@@ -71,7 +71,7 @@ cdef inline str pack_uint8(unsigned int value):
     return buffer[0:1].decode("latin1")
 
 cdef inline str pack_uint16(unsigned int value):
-    """Pack unsigned 16-bit integer in little-endian order to `<'str'>`.
+    """Pack `UNSIGNED` 16-bit integer in little-endian order to `<'str'>`.
 
     Equivalent to:
     >>> struct.pack("<H", value).decode("latin1")
@@ -82,7 +82,7 @@ cdef inline str pack_uint16(unsigned int value):
     return buffer[0:2].decode("latin1")
 
 cdef inline str pack_uint24(unsigned int value):
-    """Pack unsigned 24-bit integer in little-endian order to `<'str'>`.
+    """Pack `UNSIGNED` 24-bit integer in little-endian order to `<'str'>`.
 
     Equivalent to:
     >>> (struct.pack("<I", value)[:3]).decode("latin1")
@@ -94,7 +94,7 @@ cdef inline str pack_uint24(unsigned int value):
     return buffer[0:3].decode("latin1")
 
 cdef inline str pack_uint32(unsigned long long value):
-    """Pack unsigned 32-bit integer in little-endian order to `<'str'>`.
+    """Pack `UNSIGNED` 32-bit integer in little-endian order to `<'str'>`.
 
     Equivalent to:
     >>> struct.pack("<I", value).decode("latin1")
@@ -107,7 +107,7 @@ cdef inline str pack_uint32(unsigned long long value):
     return buffer[0:4].decode("latin1")
 
 cdef inline str pack_uint64(unsigned long long value):
-    """Pack unsigned 64-bit integer in little-endian order to `<'str'>`.
+    """Pack `UNSIGNED` 64-bit integer in little-endian order to `<'str'>`.
 
     Equivalent to:
     >>> struct.pack("<Q", value).decode("latin1")
@@ -125,7 +125,7 @@ cdef inline str pack_uint64(unsigned long long value):
 
 # Utils: Pack signed integer
 cdef inline str pack_int8(int value):
-    """Pack signed 8-bit integer in little-endian order to `<'str'>`.
+    """Pack `SIGNED` 8-bit integer in little-endian order to `<'str'>`.
     
     Equivalent to:
     >>> struct.pack("<b", value).encode("latin1")
@@ -135,7 +135,7 @@ cdef inline str pack_int8(int value):
     return buffer[0:1].decode("latin1")
 
 cdef inline str pack_int16(int value):
-    """Pack signed 16-bit integer in little-endian order to `<'str'>`.
+    """Pack `SIGNED` 16-bit integer in little-endian order to `<'str'>`.
 
     Equivalent to:
     >>> struct.pack("<h", value).decode("latin1")
@@ -146,7 +146,7 @@ cdef inline str pack_int16(int value):
     return buffer[0:2].decode("latin1")
 
 cdef inline str pack_int24(int value):
-    """Pack signed 24-bit integer in little-endian order to `<'str'>`.
+    """Pack `SIGNED` 24-bit integer in little-endian order to `<'str'>`.
 
     Equivalent to:
     >>> (struct.pack("<i", value)[:3]).decode("latin1")
@@ -158,7 +158,7 @@ cdef inline str pack_int24(int value):
     return buffer[0:3].decode("latin1")
 
 cdef inline str pack_int32(long long value):
-    """Pack signed 32-bit integer in little-endian order to `<'str'>`.
+    """Pack `SIGNED` 32-bit integer in little-endian order to `<'str'>`.
 
     Equivalent to:
     >>> struct.pack("<i", value).decode("latin1")
@@ -171,7 +171,7 @@ cdef inline str pack_int32(long long value):
     return buffer[0:4].decode("latin1")
 
 cdef inline str pack_int64(long long value):
-    """Pack signed 64-bit integer in little-endian order to `<'str'>`.
+    """Pack `SIGNED` 64-bit integer in little-endian order to `<'str'>`.
 
     Equivalent to:
     >>> struct.pack("<q", value).decode("latin1")

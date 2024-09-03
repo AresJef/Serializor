@@ -2060,8 +2060,8 @@ def _ser_subclass(obj: object, obj_dtype: type) -> bytes:
 
 @cython.ccall
 def serialize(obj: object) -> bytes:
-    """Serialize object to `<'bytes'>`.
-    
+    """Serialize an object to `<'bytes'>`.
+
     Supports:
     - Python natives:
         - Ser <'str'> -> Des <'str'>

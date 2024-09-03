@@ -15,11 +15,12 @@ __all__ = ["serialize"]
 
 
 # Serialize -----------------------------------------------------------------------------------
-def serialize(obj: object, to_bytes: bool = True) -> bytes | str:
-    """Serialize an object to `<bytes>` or `<str>`.
+@cython.ccall
+def serialize(obj: object, to_bytes: cython.bint = True) -> object:
+    """Serialize an object to `<'bytes'>` or `<'str'>`.
 
     :param obj `<'object'>`: The object to serialize.
-    :param to_bytes `<'bool'>`: Whether to serialize to `<bytes>`. Defaults to `True`.
+    :param to_bytes `<'bool'>`: Whether to serialize to `<'bytes'>` (recommended). Defaults to `True`.
 
     Supports:
     - Python natives:
@@ -63,4 +64,4 @@ def serialize(obj: object, to_bytes: bool = True) -> bytes | str:
         - Ser <'pd.TimedeltaIndex'> -> Des <'pd.TimedeltaIndex'>
         - Ser <'pd.DataFrame'> -> Des <'pd.DataFrame'>
     """
-    return _ser_bin(obj) if bool(to_bytes) else _ser_uni(obj)
+    return _ser_bin(obj) if to_bytes else _ser_uni(obj)
