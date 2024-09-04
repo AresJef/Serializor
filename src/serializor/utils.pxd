@@ -9,6 +9,7 @@ from cpython.unicode cimport (
     PyUnicode_DecodeUTF8,
     PyUnicode_DecodeASCII,
     PyUnicode_AsEncodedString,
+    PyUnicode_ReadChar as str_read,
     PyUnicode_GET_LENGTH as str_len,
     PyUnicode_Substring as str_substr,
 )
@@ -116,6 +117,7 @@ cdef inline str map_nptime_unit_int2str(int unit):
         return "h"
     if unit == np.NPY_DATETIMEUNIT.NPY_FR_D:
         return "D"
+
     # Uncommon units
     if unit == np.NPY_DATETIMEUNIT.NPY_FR_Y:
         return "Y"
@@ -131,41 +133,58 @@ cdef inline str map_nptime_unit_int2str(int unit):
         return "as"
     # if unit == np.NPY_DATETIMEUNIT.NPY_FR_B:
     #     return "B"
+
+    # Unsupported unit
     raise ValueError("unsupported numpy time unit: %d." % unit)
 
 cdef inline int map_nptime_unit_str2int(str unit):
     """Map ndarray[datetime64/timedelta64] unit from string
     representation to the corresponding integer `<'int'>`."""
-    # Common units
-    if unit == "ns":
-        return np.NPY_DATETIMEUNIT.NPY_FR_ns
-    if unit == "us":
-        return np.NPY_DATETIMEUNIT.NPY_FR_us
-    if unit == "ms":
-        return np.NPY_DATETIMEUNIT.NPY_FR_ms
-    if unit == "s":
-        return np.NPY_DATETIMEUNIT.NPY_FR_s
-    if unit == "m":
-        return np.NPY_DATETIMEUNIT.NPY_FR_m
-    if unit == "h":
-        return np.NPY_DATETIMEUNIT.NPY_FR_h
-    if unit == "D":
-        return np.NPY_DATETIMEUNIT.NPY_FR_D
-    # Uncommon units
-    if unit == "Y":
-        return np.NPY_DATETIMEUNIT.NPY_FR_Y
-    if unit == "M":
-        return np.NPY_DATETIMEUNIT.NPY_FR_M
-    if unit == "W":
-        return np.NPY_DATETIMEUNIT.NPY_FR_W
-    if unit == "ps":
-        return np.NPY_DATETIMEUNIT.NPY_FR_ps
-    if unit == "fs":
-        return np.NPY_DATETIMEUNIT.NPY_FR_fs
-    if unit == "as":
-        return np.NPY_DATETIMEUNIT.NPY_FR_as
-    # if unit == "B":
-    #     return np.NPY_DATETIMEUNIT.NPY_FR_B
+    cdef:
+        Py_ssize_t size = str_len(unit)
+        Py_UCS4 ch
+
+    # Unit: 'ns', 'us', 'ms', 'ps', 'fs', 'as'
+    if size == 2:
+        # Common units
+        ch = str_read(unit, 0)
+        if ch == "n":
+            return np.NPY_DATETIMEUNIT.NPY_FR_ns
+        if ch == "u":
+            return np.NPY_DATETIMEUNIT.NPY_FR_us
+        if ch == "m":
+            return np.NPY_DATETIMEUNIT.NPY_FR_ms
+        # Uncommon units
+        if ch == "p":
+            return np.NPY_DATETIMEUNIT.NPY_FR_ps
+        if ch == "f":
+            return np.NPY_DATETIMEUNIT.NPY_FR_fs
+        if ch == "a":
+            return np.NPY_DATETIMEUNIT.NPY_FR_as
+
+    # Unit: 's', 'm', 'h', 'D', 'Y', 'M', 'W', 'B'
+    elif size == 1:
+        # Common units
+        ch = str_read(unit, 0)
+        if ch == "s":
+            return np.NPY_DATETIMEUNIT.NPY_FR_s
+        if ch == "m":
+            return np.NPY_DATETIMEUNIT.NPY_FR_m
+        if ch == "h":
+            return np.NPY_DATETIMEUNIT.NPY_FR_h
+        if ch == "D":
+            return np.NPY_DATETIMEUNIT.NPY_FR_D
+        # Uncommon units
+        if ch == "Y":
+            return np.NPY_DATETIMEUNIT.NPY_FR_Y
+        if ch == "M":
+            return np.NPY_DATETIMEUNIT.NPY_FR_M
+        if ch == "W":
+            return np.NPY_DATETIMEUNIT.NPY_FR_W
+        # if ch == "B":
+        #     return np.NPY_DATETIMEUNIT.NPY_FR_B
+
+    # Unsupported unit
     raise ValueError("unsupported numpy time unit: %s." % unit)
 
 cdef inline int parse_arr_nptime_unit(np.ndarray arr):
@@ -173,7 +192,7 @@ cdef inline int parse_arr_nptime_unit(np.ndarray arr):
     given 'arr', returns the unit in `<'int'>`."""
     cdef:
         str dtype_str = arr.dtype.str
-        Py_ssize_t length = str_len(dtype_str)
-    if length < 6:
-        raise ValueError("unable to parse ndarray time unit '%s'." % dtype_str)
-    return map_nptime_unit_str2int(str_substr(dtype_str, 4, length - 1))
+        Py_ssize_t size = str_len(dtype_str)
+    if size < 6:
+        raise ValueError("unable to parse ndarray time unit from '%s'." % dtype_str)
+    return map_nptime_unit_str2int(str_substr(dtype_str, 4, size - 1))
