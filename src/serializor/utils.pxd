@@ -99,7 +99,7 @@ cdef inline np.ndarray arr_flatten(np.ndarray arr):
 
 # NumPy: nptime unit
 cdef inline str map_nptime_unit_int2str(int unit):
-    """Map ndarray[datetime64/timedelta64] time unit from integer
+    """Map ndarray[datetime64/timedelta64] unit from integer
     to the corresponding string representation `<'str'>`."""
     # Common units
     if unit == np.NPY_DATETIMEUNIT.NPY_FR_ns:
@@ -131,10 +131,10 @@ cdef inline str map_nptime_unit_int2str(int unit):
         return "as"
     # if unit == np.NPY_DATETIMEUNIT.NPY_FR_B:
     #     return "B"
-    raise ValueError("Unsupported numpy time unit: %d." % (unit))
+    raise ValueError("unsupported numpy time unit: %d." % unit)
 
 cdef inline int map_nptime_unit_str2int(str unit):
-    """Map ndarray[datetime64/timedelta64] time unit from string
+    """Map ndarray[datetime64/timedelta64] unit from string
     representation to the corresponding integer `<'int'>`."""
     # Common units
     if unit == "ns":
@@ -166,14 +166,14 @@ cdef inline int map_nptime_unit_str2int(str unit):
         return np.NPY_DATETIMEUNIT.NPY_FR_as
     # if unit == "B":
     #     return np.NPY_DATETIMEUNIT.NPY_FR_B
-    raise ValueError("Unsupported numpy time unit: %s." % (unit))
+    raise ValueError("unsupported numpy time unit: %s." % unit)
 
 cdef inline int parse_arr_nptime_unit(np.ndarray arr):
-    """Parse numpy datetime64/timedelta64 time unit from the
+    """Parse numpy datetime64/timedelta64 unit from the
     given 'arr', returns the unit in `<'int'>`."""
     cdef:
         str dtype_str = arr.dtype.str
         Py_ssize_t length = str_len(dtype_str)
     if length < 6:
-        raise ValueError("Failed to parse arr time unit from: '%s'." % dtype_str)
+        raise ValueError("unable to parse ndarray time unit '%s'." % dtype_str)
     return map_nptime_unit_str2int(str_substr(dtype_str, 4, length - 1))

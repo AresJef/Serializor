@@ -8,7 +8,7 @@ from cython.cimports import numpy as np  # type: ignore
 from cython.cimports.cpython import datetime  # type: ignore
 from cython.cimports.cpython.list import PyList_AsTuple as list_to_tuple  # type: ignore
 from cython.cimports.cpython.unicode import PyUnicode_GET_LENGTH as str_len  # type: ignore
-from cython.cimports.cpython.unicode import PyUnicode_READ_CHAR as read_char  # type: ignore
+from cython.cimports.cpython.unicode import PyUnicode_READ_CHAR as str_read  # type: ignore
 from cython.cimports.cpython.complex import PyComplex_FromDoubles as gen_complex  # type: ignore
 from cython.cimports.serializor import identifier, typeref, utils  # type: ignore
 
@@ -79,7 +79,7 @@ def _des_bool(data: str, pos: cython.Py_ssize_t[1]) -> object:
 
     Position updates to the next charactor after deserialization.
     """
-    val: cython.uchar = read_char(data, pos[0] + 1)
+    val: cython.uchar = str_read(data, pos[0] + 1)
     pos[0] += 2  # skip identifier & boolean value
     return True if val == 1 else False
 
@@ -395,7 +395,7 @@ def _des_ndarray(data: str, pos: cython.Py_ssize_t[1]) -> object:
     """
     pos[0] += 1  # skip identifier
     # Get ndarray dtype
-    arr_dtype: cython.char = read_char(data, pos[0])
+    arr_dtype: cython.char = str_read(data, pos[0])
 
     # Deserialize ndarray
     # . ndarray[object]
@@ -1318,7 +1318,7 @@ def _des_data(data: str, pos: cython.Py_ssize_t[1]) -> object:
 
     Position updates to the next byte after deserialization.
     """
-    dtype_id: cython.char = read_char(data, pos[0])
+    dtype_id: cython.char = str_read(data, pos[0])
 
     # Basic Types
     # <'str'>

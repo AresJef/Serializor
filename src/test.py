@@ -645,24 +645,21 @@ class Test_Ser_Des(TestCase):
 if __name__ == "__main__":
     # Test binary
     print(" Test 'binary' ".center(80, "-"))
-    from serializor.binary.ser import serialize
-    from serializor.binary.des import deserialize
+    from serializor.binary import serialize, deserialize
 
     Test_Ser_Des().test_all()
     print()
 
     # Test unicode
     print(" Test 'unicode' ".center(80, "-"))
-    from serializor.unicode.ser import serialize
-    from serializor.unicode.des import deserialize
+    from serializor.unicode import serialize, deserialize
 
     Test_Ser_Des().test_all()
     print()
 
     # Test unifunction
     print(" Test unifunction ".center(80, "-"))
-    from serializor.ser import serialize
-    from serializor.des import deserialize
+    from serializor import serialize, deserialize
 
     obj = TestCase.data
     se = serialize(obj, to_bytes=True)
@@ -677,7 +674,7 @@ if __name__ == "__main__":
 
     # Test encrypt/decrypt
     print(" Test encrypt/decrypt ".center(80, "-"))
-    from serializor.crypto import encrypt, decrypt
+    from serializor import encrypt, decrypt
 
     obj = TestCase.data
     key = "show me the money!"

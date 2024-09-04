@@ -1,5 +1,5 @@
 # cython: language_level=3
-from cpython.unicode cimport PyUnicode_READ_CHAR as read_char
+from cpython.unicode cimport PyUnicode_READ_CHAR as str_read
 from serializor.unicode.ser cimport (  # type: ignore
     UINT8_ENCODE_VALUE,
     UINT16_ENCODE_VALUE,
@@ -12,15 +12,15 @@ cdef inline unsigned char unpack_uint8(str data, Py_ssize_t pos):
     """Unpack (read) `UNSIGNED` 8-bit integer from 'data'
     at the given 'pos' in little-endian order `<'int'>`.
     """
-    return <unsigned char> read_char(data, pos)
+    return <unsigned char> str_read(data, pos)
 
 cdef inline unsigned short unpack_uint16(str data, Py_ssize_t pos):
     """Unpack (read) `UNSIGNED` 16-bit integer from 'data'
     at the given 'pos' in little-endian order `<'int'>`.
     """
     cdef:
-        unsigned short p0 = <unsigned char> read_char(data, pos)
-        unsigned short p1 = <unsigned char> read_char(data, pos + 1)
+        unsigned short p0 = <unsigned char> str_read(data, pos)
+        unsigned short p1 = <unsigned char> str_read(data, pos + 1)
         unsigned short res = p0 | (p1 << 8)
     return res
 
@@ -29,9 +29,9 @@ cdef inline unsigned int unpack_uint24(str data, Py_ssize_t pos):
     at the given 'pos' in little-endian order `<'int'>`.
     """
     cdef:
-        unsigned int p0 = <unsigned char> read_char(data, pos)
-        unsigned int p1 = <unsigned char> read_char(data, pos + 1)
-        unsigned int p2 = <unsigned char> read_char(data, pos + 2)
+        unsigned int p0 = <unsigned char> str_read(data, pos)
+        unsigned int p1 = <unsigned char> str_read(data, pos + 1)
+        unsigned int p2 = <unsigned char> str_read(data, pos + 2)
         unsigned int res = p0 | (p1 << 8) | (p2 << 16)
     return res
 
@@ -40,10 +40,10 @@ cdef inline unsigned int unpack_uint32(str data, Py_ssize_t pos):
     at the given 'pos' in little-endian order `<'int'>`.
     """
     cdef:
-        unsigned int p0 = <unsigned char> read_char(data, pos)
-        unsigned int p1 = <unsigned char> read_char(data, pos + 1)
-        unsigned int p2 = <unsigned char> read_char(data, pos + 2)
-        unsigned int p3 = <unsigned char> read_char(data, pos + 3)
+        unsigned int p0 = <unsigned char> str_read(data, pos)
+        unsigned int p1 = <unsigned char> str_read(data, pos + 1)
+        unsigned int p2 = <unsigned char> str_read(data, pos + 2)
+        unsigned int p3 = <unsigned char> str_read(data, pos + 3)
         unsigned int res = p0 | (p1 << 8) | (p2 << 16) | (p3 << 24)
     return res
 
@@ -52,14 +52,14 @@ cdef inline unsigned long long unpack_uint64(str data, Py_ssize_t pos):
     at the given 'pos' in little-endian order `<'int'>`.
     """
     cdef:
-        unsigned long long p0 = <unsigned char> read_char(data, pos)
-        unsigned long long p1 = <unsigned char> read_char(data, pos + 1)
-        unsigned long long p2 = <unsigned char> read_char(data, pos + 2)
-        unsigned long long p3 = <unsigned char> read_char(data, pos + 3)
-        unsigned long long p4 = <unsigned char> read_char(data, pos + 4)
-        unsigned long long p5 = <unsigned char> read_char(data, pos + 5)
-        unsigned long long p6 = <unsigned char> read_char(data, pos + 6)
-        unsigned long long p7 = <unsigned char> read_char(data, pos + 7)
+        unsigned long long p0 = <unsigned char> str_read(data, pos)
+        unsigned long long p1 = <unsigned char> str_read(data, pos + 1)
+        unsigned long long p2 = <unsigned char> str_read(data, pos + 2)
+        unsigned long long p3 = <unsigned char> str_read(data, pos + 3)
+        unsigned long long p4 = <unsigned char> str_read(data, pos + 4)
+        unsigned long long p5 = <unsigned char> str_read(data, pos + 5)
+        unsigned long long p6 = <unsigned char> str_read(data, pos + 6)
+        unsigned long long p7 = <unsigned char> str_read(data, pos + 7)
         unsigned long long res = (
             p0 | (p1 << 8) | (p2 << 16) | (p3 << 24) | (p4 << 32)
             | (p5 << 40) | (p6 << 48) | (p7 << 56) )
@@ -69,7 +69,7 @@ cdef inline unsigned long long unpack_uint64(str data, Py_ssize_t pos):
 cdef inline signed char unpack_int8(str data, Py_ssize_t pos):
     """Read (unpack) `SIGNED` 8-bit integer from 'data'
     at givent 'pos' in little-endian order `<'int'>`."""
-    return <signed char> read_char(data, pos)
+    return <signed char> str_read(data, pos)
 
 cdef inline short unpack_int16(str data, Py_ssize_t pos):
     """Read (unpack) `SIGNED` 16-bit integer from 'data'
@@ -101,7 +101,7 @@ cdef inline unsigned long long dec_encoded_int(str data, Py_ssize_t pos[1]):
     """
     cdef:
         Py_ssize_t idx = pos[0]
-        unsigned char code = <unsigned char> read_char(data, idx)
+        unsigned char code = <unsigned char> str_read(data, idx)
 
     if code <= UINT8_ENCODE_VALUE:
         pos[0] = idx + 1
