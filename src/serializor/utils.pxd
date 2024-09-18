@@ -193,6 +193,11 @@ cdef inline int parse_arr_nptime_unit(np.ndarray arr):
     cdef:
         str dtype_str = arr.dtype.str
         Py_ssize_t size = str_len(dtype_str)
+
     if size < 6:
         raise ValueError("unable to parse ndarray time unit from '%s'." % dtype_str)
-    return map_nptime_unit_str2int(str_substr(dtype_str, 4, size - 1))
+    dtype_str = str_substr(dtype_str, 4, size - 1)
+    try:
+        return map_nptime_unit_str2int(dtype_str)
+    except ValueError as err:
+        raise ValueError("unable to parse ndarray time unit from '%s'." % dtype_str) from err
