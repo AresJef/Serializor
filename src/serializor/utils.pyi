@@ -54,13 +54,13 @@ def arr_flatten(arr: ndarray) -> ndarray:
 
 # NumPy: nptime unit
 def map_nptime_unit_int2str(unit: int) -> str:
-    """(cfunc) Map ndarray[datetime64/timedelta64] time unit from integer
+    """(cfunc) Map numpy datetime64/timedelta64 unit from integer
     to the corresponding string representation `<'str'>`."""
 
 def map_nptime_unit_str2int(unit: str) -> int:
-    """(cfunc) Map ndarray[datetime64/timedelta64] time unit from string
+    """(cfunc) Map numpy datetime64/timedelta64 unit from string
     representation to the corresponding integer `<'int'>`."""
 
 def parse_arr_nptime_unit(arr: ndarray) -> int:
-    """(cfunc) Parse numpy datetime64/timedelta64 time unit from the
-    given 'arr', returns the unit in `<'int'>`."""
+    """(cfunc) Parse ndarray[datetime64/timedelta64] unit from the,
+    returns the unit in `<'int'>`."""
