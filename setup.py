@@ -57,10 +57,10 @@ if platform.system() == "Windows":
     ]
 else:
     extensions = [
-        extension("binary/des.py", True),
-        extension("binary/ser.py", True),
-        extension("unicode/des.py", True),
-        extension("unicode/ser.py", True),
+        extension("binary/des.py", True, "-Wno-unreachable-code"),
+        extension("binary/ser.py", True, "-Wno-unreachable-code"),
+        extension("unicode/des.py", True, "-Wno-unreachable-code"),
+        extension("unicode/ser.py", True, "-Wno-unreachable-code"),
         extension("crypto.py", True),
         extension("des.py", True),
         extension("identifier.py", False),
