@@ -62,11 +62,11 @@ else:
         extension("unicode/des.py", True, "-Wno-unreachable-code"),
         extension("unicode/ser.py", True, "-Wno-unreachable-code"),
         extension("crypto.py", True),
-        extension("des.py", True),
-        extension("identifier.py", False),
-        extension("ser.py", True),
+        extension("des.py", True, "-Wno-unreachable-code"),
+        extension("identifier.py", False, "-Wno-unreachable-code"),
+        extension("ser.py", True, "-Wno-unreachable-code"),
         extension("typeref.py", False),
-        extension("utils.py", True),
+        extension("utils.py", True, "-Wno-unreachable-code"),
     ]
 
 
