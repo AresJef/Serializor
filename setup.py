@@ -61,7 +61,7 @@ else:
         extension("binary/ser.py", True, "-Wno-unreachable-code"),
         extension("unicode/des.py", True, "-Wno-unreachable-code"),
         extension("unicode/ser.py", True, "-Wno-unreachable-code"),
-        extension("crypto.py", True),
+        extension("crypto.py", True, "-Wno-unreachable-code"),
         extension("des.py", True, "-Wno-unreachable-code"),
         extension("identifier.py", False, "-Wno-unreachable-code"),
         extension("ser.py", True, "-Wno-unreachable-code"),
